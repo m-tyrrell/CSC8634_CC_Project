@@ -38,3 +38,31 @@ ggplot(gpu_t, aes(timestamp, gpuMemUtilPerc)) + geom_line()
 
 # GPU EDA - looks like GPU dataset is an automated output, taking readings at a specified time for all GPUs.
 
+
+# Filter task_xy for only level 12 (because levels 4 and 8 are sparsley represented - i.e. 1 and 256 samples respectively)
+# Drop unused columns for joining
+task_xy_red = task_xy %>%
+        # filter(level == 12) %>%
+        mutate(jobId = NULL)
+        
+length(unique(task_xy_red$taskId))
+
+
+# Join task_xy_red to app_check joining on taskId
+test = left_join(app_check, task_xy_red)
+    
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
