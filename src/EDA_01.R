@@ -87,9 +87,55 @@ q2 = gpu %>%
 
 x = sample(1:dim(q2)[1],10000)
 q2_samp = q2[x,]
+
 plot(q2_samp$powerDrawWatt,q2_samp$gpuTempC)
 
 plot(q2_samp$gpuUtilPerc,q2_samp$gpuTempC)
+
+
+# Q3 Increased power draw and render time?
+# Want to look at gpu stats for each render (right?)
+# Look at start/stop times for each render and fit them into gpu stats based on timestamps
+
+q3 = test %>%
+        filter(eventName == 'Render') %>%
+        group_by(taskId, eventName, x, y) %>%
+        summarise(duration = as.numeric(difftime(last(timestamp), first(timestamp), unit = 'sec')))
+
+gpu_q3 = gpu %>%
+        arrange(hostname, timestamp)
+
+
+
+
+# Q3-b
+q3 = test %>%
+        filter(eventName == 'Render', level == 12) %>%
+        group_by(taskId, eventName, x, y) %>%
+        summarise(duration = as.numeric(difftime(last(timestamp), first(timestamp), unit = 'sec'))) %>%
+        arrange(x,y)
+        
+q3 = q3[,-(1:2)]
+
+x = split(q3$duration, ceiling(seq_along(q3$duration)/256))
+
+df = data.frame()
+for (i in length(x):1){
+        df = rbind(df, x[[i]])
+}
+
+names(df) = 1:256
+
+heatmap(as.matrix(df), Rowv=NA, Colv=NA, labRow=NA, labCol = NA, xlab = "Relative Rendering Duration by Tile")
+
+ggplot(data = q3, aes(x = x, y = y)) +
+        geom_tile(aes(fill = duration)) 
+
+
+
+
+
+
 
 
 
