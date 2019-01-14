@@ -52,13 +52,11 @@ task_xy_red = task_xy %>%
         # filter(level == 12) %>%
         mutate(jobId = NULL)
         
-length(unique(task_xy_red$taskId))
-
 
 # Join task_xy_red to app_check joining on taskId
-test = left_join(app_check, task_xy_red)
+app_task = left_join(app_check, task_xy_red)
 
-test = test %>%
+app_task = app_task %>%
         mutate(jobId = NULL) %>%
         arrange(taskId, timestamp)
 
@@ -72,7 +70,7 @@ test2 = left_join(gpu_r, test)
 # Q1 Which tasks dominate runtimes?
 # For each different taskId, calculate difference in time for each task (stop - start) and enter in new column
 
-q1 = test %>%
+q1 = app_task %>%
         group_by(taskId, eventName) %>%
         summarise(duration = as.numeric(difftime(last(timestamp), first(timestamp), unit = 'sec'))) %>%
         group_by(eventName) %>%
@@ -97,7 +95,7 @@ plot(q2_samp$gpuUtilPerc,q2_samp$gpuTempC)
 # Want to look at gpu stats for each render (right?)
 # Look at start/stop times for each render and fit them into gpu stats based on timestamps
 
-q3 = test %>%
+q3 = app_task %>%
         filter(eventName == 'Render') %>%
         group_by(taskId, eventName, x, y) %>%
         summarise(duration = as.numeric(difftime(last(timestamp), first(timestamp), unit = 'sec')))
@@ -108,32 +106,61 @@ gpu_q3 = gpu %>%
 
 
 
-# Q3-b
-q3 = test %>%
+# Compare resource usage by tile (Q3b)
+# Filter and aggregate joined app_check/taskxy to display only relevant variables/tasks
+comp_tile = app_task %>%
+        # Remove non-render tasks and all non level 12 observations (because there are basically none compared to level 12)
         filter(eventName == 'Render', level == 12) %>%
+        # Aggregate by taskId computing duration of task using difftime (for each taskId)
         group_by(taskId, eventName, x, y) %>%
         summarise(duration = as.numeric(difftime(last(timestamp), first(timestamp), unit = 'sec'))) %>%
+        # Order df by row vectors to prepare for reordering tile durations by tile coordinates
         arrange(x,y)
-        
-q3 = q3[,-(1:2)]
 
-x = split(q3$duration, ceiling(seq_along(q3$duration)/256))
+# Drop unused variables (must be removed from dplyr pipe)
+comp_tile = comp_tile[,-(1:2)]
+# Split duration vector into 256 row vectors
+x = split(comp_tileb$duration, ceiling(seq_along(comp_tile$duration)/256))
 
+# Loop through list of row vectors, binding to empty df, then insert friendly column names
 df = data.frame()
 for (i in length(x):1){
         df = rbind(df, x[[i]])
 }
-
 names(df) = 1:256
 
+# Create heatmap of tile render durations
 heatmap(as.matrix(df), Rowv=NA, Colv=NA, labRow=NA, labCol = NA, xlab = "Relative Rendering Duration by Tile")
 
-ggplot(data = q3, aes(x = x, y = y)) +
-        geom_tile(aes(fill = duration)) 
+# Summary statistics for render durations
+summary(comp_tile$duration)
 
 
 
+# Compare performance by GPU (Q3b)
+#Strip down gpu dataset to only hostnames and gpu serial
+gpu_ser = gpu %>%
+        distinct(hostname, gpuSerial, .keep_all = FALSE)
 
+# Filter and aggregate joined app_check/taskxy to display only relevant variables/tasks
+comp_gpu = app_task %>%
+        # Remove non-render tasks and all non level 12 observations (because there are basically none compared to level 12)
+        filter(eventName == 'Render', level == 12) %>%
+        # Aggregate by taskId computing duration of task using difftime (for each taskId)
+        group_by(hostname, taskId, eventName, x, y) %>%
+        summarise(duration = as.numeric(difftime(last(timestamp), first(timestamp), unit = 'sec'))) %>%
+        left_join(gpu_ser, by = 'hostname') %>%
+        group_by(gpuSerial) %>%
+        summarise(avg_dur = mean(duration))
+        
+# Plot gpus by mean duration
+plot(comp_gpu$avg_dur)
+
+# Seems to be a distinct clustering of mean rendering times into approximately 2 clusters
+summary(comp_gpu$avg_dur)
+
+
+        
 
 
 
