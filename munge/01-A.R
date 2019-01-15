@@ -1,16 +1,42 @@
 # preprocessing script.
 
-
-
-task_xy = read.csv(file = "data/terra/task-x-y.csv")
-cache("task_xy")
-
-gpu = read.csv(file = "data/terra/gpu.csv")
+# Load csv data file, correct timestamp using lubridate and cache
+gpu = read.csv(file = "data/gpu.csv")
 gpu$timestamp = ymd_hms(gpu$timestamp)
 cache("gpu")
 
-app_check = read.csv(file = "data/terra/application-checkpoints.csv")
+# Load each csv data file, correct timestamp using lubridate
+app_check = read.csv(file = "data/application-checkpoints.csv")
 app_check$timestamp = ymd_hms(app_check$timestamp)
-cache("app_check")
 
+task_xy = read.csv(file = "data/task-x-y.csv")
+
+# Join datasets and cache
+app_task = app_check %>%
+        # Join task_xy to app_check on taskId
+        left_join(task_xy_red) %>%
+        # Drop unused variables
+        mutate(jobId = NULL) %>%
+        # Arrange by taskId and timestamp !! important for later processing !!
+        arrange(taskId, timestamp)
+
+cache('app_task')
+
+
+
+#### Load functions
+
+#### Build Map
+# Build matrix map from input vectors - used to reconstruct x,y coordinates in image form for heatmaps
+# Loop through list of row vectors, binding to empty df, then insert friendly column names
+build_map = function(x,n){
+        df = data.frame()
+        for (i in length(x):1){
+                df = rbind(df, x[[i]])
+        }
+        names(df) = 1:n
+        return(as.matrix(df))
+}
+
+cache("build_map")
 

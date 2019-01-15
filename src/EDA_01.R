@@ -1,31 +1,12 @@
 # EDA
 
+# Looking at individual GPU performance
 gpu_id = data.frame(gpuSerial = sort(unique(gpu$gpuSerial)), id =  1:1024)
 gpu_r = gpu
 gpu_r = left_join(gpu_r, gpu_id)
 
-hist(gpu_r$id)
-summary(gpu_r$id)
-
-
-
 t = gpu %>%
         filter(gpuSerial == 323217055910)
-
-
-
-
-
-
-
-
-gpu_r$timestamp <- strptime(x = as.character(gpu_r$timestamp),
-                                format = "%Y/%m/%d %H:%M")
-
-gpu_r$timestamp = ymd_hms(as.character(gpu_r$timestamp))
-
-max(app_check$timestamp) - min(app_check$timestamp)
-
 
 gpu_t = gpu_r %>%
         filter(id == 500)
@@ -35,6 +16,8 @@ ggplot(gpu_t, aes(timestamp, gpuTempC)) + geom_line()
 ggplot(gpu_t, aes(timestamp, gpuUtilPerc)) + geom_line() 
 ggplot(gpu_t, aes(timestamp, gpuMemUtilPerc)) + geom_line() 
 
+
+##### FINDINGS
 
 # GPU EDA - looks like GPU dataset is an automated output, taking readings at a specified time for all GPUs.
 
@@ -46,33 +29,18 @@ ggplot(gpu_t, aes(timestamp, gpuMemUtilPerc)) + geom_line()
 # GPuUUID: 1024
 
 
-# Filter task_xy for only level 12 (because levels 4 and 8 are sparsley represented - i.e. 1 and 256 samples respectively)
-# Drop unused columns for joining
-task_xy_red = task_xy %>%
-        # filter(level == 12) %>%
-        mutate(jobId = NULL)
-        
 
-# Join task_xy_red to app_check joining on taskId
-app_task = left_join(app_check, task_xy_red)
-
-app_task = app_task %>%
-        mutate(jobId = NULL) %>%
-        arrange(taskId, timestamp)
-
-test2 = left_join(gpu_r, test)
-    
  
-
-
-
+##### QUESTIONS
 
 # Q1 Which tasks dominate runtimes?
 # For each different taskId, calculate difference in time for each task (stop - start) and enter in new column
 
 q1 = app_task %>%
+        # Aggregate by task and event, taking difference between stop and start times as new column (duration)
         group_by(taskId, eventName) %>%
         summarise(duration = as.numeric(difftime(last(timestamp), first(timestamp), unit = 'sec'))) %>%
+        # Aggregate by event taking mean of all observations for each event
         group_by(eventName) %>%
         summarise(mean_dur = mean(duration))
 
@@ -120,17 +88,12 @@ comp_tile = app_task %>%
 # Drop unused variables (must be removed from dplyr pipe)
 comp_tile = comp_tile[,-(1:2)]
 # Split duration vector into 256 row vectors
-x = split(comp_tileb$duration, ceiling(seq_along(comp_tile$duration)/256))
+x = split(comp_tile$duration, ceiling(seq_along(comp_tile$duration)/256))
 
-# Loop through list of row vectors, binding to empty df, then insert friendly column names
-df = data.frame()
-for (i in length(x):1){
-        df = rbind(df, x[[i]])
-}
-names(df) = 1:256
-
+# Call mapping function   
+map_matrix = build_map(x,256)
 # Create heatmap of tile render durations
-heatmap(as.matrix(df), Rowv=NA, Colv=NA, labRow=NA, labCol = NA, xlab = "Relative Rendering Duration by Tile")
+heatmap(map_matrix, Rowv=NA, Colv=NA, labRow=NA, labCol = NA, xlab = "Relative Rendering Duration by Tile")
 
 # Summary statistics for render durations
 summary(comp_tile$duration)
@@ -158,18 +121,16 @@ comp_gpu = app_task %>%
         # Add index column for plotting
         mutate(index = 1:1024)
 
-# Plot gpus by mean duration
 
-plot_comp_gpu = ggplot(comp_gpu)
 # Plot render time by S/N        
-plot_comp_gpu + geom_point(aes(gpuSerial, avg_dur)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') + geom_hline(yintercept = mean(comp_gpu$avg_dur), color = 'red')
+ggplot(comp_gpu) + geom_point(aes(gpuSerial, avg_dur)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') + geom_hline(yintercept = mean(comp_gpu$avg_dur), color = 'red')
 # Plot render time by S/N index to more easily show spread
-plot_comp_gpu + geom_point(aes(index, avg_dur)) + labs(x = 'GPU S/N index', y = 'Mean Render Time (s)') + geom_hline(yintercept = mean(comp_gpu$avg_dur), color = 'red')
+ggplot(comp_gpu) + geom_point(aes(index, avg_dur)) + labs(x = 'GPU S/N index', y = 'Mean Render Time (s)') + geom_hline(yintercept = mean(comp_gpu$avg_dur), color = 'red')
 
 # Seems to be a distinct clustering of mean rendering times into approximately 2 clusters around the mean (41.3s)
 summary(comp_gpu$avg_dur)
 
-test = quantile(comp_gpu$avg_dur, type = 6)
+
 
 
 # Compare GPU clusters by tile
@@ -184,35 +145,22 @@ gpu_tile = app_task %>%
         arrange(x, y) %>%
         # Join stripped down gpu dataset on hostname
         left_join(gpu_ser, by = 'hostname') %>%
-        mutate(outliers = ifelse(duration < 41.3,1,1000))
-
-
+        # Specify conditional filter for heatmap
+        mutate(outliers = ifelse(duration > 60,1,1000))
 # Drop unused variables (must be removed from dplyr pipe)
 gpu_tile = gpu_tile[,-(1:3)]
 
-
+# Specify column variable for heatmap
 variable = gpu_tile$outliers
 
 # Split duration vector into 256 row vectors
 x = split(variable, ceiling(seq_along(variable)/256))
-
-# Loop through list of row vectors, binding to empty df, then insert friendly column names
-build_map = function(x,n){
-        df = data.frame()
-        for (i in length(x):1){
-                df = rbind(df, x[[i]])
-        }
-        names(df) = 1:n
-        return(as.matrix(df))
-}
-        
+# Call mapping function   
 map_matrix = build_map(x,256)
-
 # Create heatmap of tile render durations
 heatmap(map_matrix, Rowv=NA, Colv=NA, labRow=NA, labCol = NA, xlab = "")
 
-# Summary statistics for render durations
-summary(comp_tile$duration)
+
         
 
 
