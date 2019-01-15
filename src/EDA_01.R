@@ -163,6 +163,40 @@ heatmap(map_matrix, Rowv=NA, Colv=NA, labRow=NA, labCol = NA, xlab = "")
 
         
 
+# Avg Resource usage by event
+gpu_perf_avg = gpu %>%
+        group_by(hostname, gpuSerial) %>%
+        summarise(watt = mean(powerDrawWatt), temp = mean(gpuTempC), cpu = mean(gpuUtilPerc), mem = mean(gpuMemUtilPerc)) %>%
+        arrange(gpuSerial)
+
+
+
+
+##### Compute mean resource usage for each event under each task
+# Arrange datasets in preparation for loop function
+gpu_perf = gpu %>%
+        arrange(hostname, timestamp)
+
+app_task_2 = app_task %>%
+        arrange(x, y, hostname, taskId, eventName, timestamp)
+
+# Designate empty dataframe
+gpu_task = data.frame()
+# Loop through app_task dataset computing mean resource usage for each event time window
+for(i in seq(1,length(app_task$timestamp),2)){
+        # Progress monitor
+        print(i)
+        # Filter and aggregate gpu dataset for each app_task event
+        x = gpu_perf %>%
+                filter(hostname == app_task_2$hostname[i]) %>%
+                filter(timestamp >= app_task_2$timestamp[i] & timestamp <= app_task_2$timestamp[i+1]) %>%
+                group_by(hostname, gpuSerial) %>%
+                summarise(watt = mean(powerDrawWatt), temp = mean(gpuTempC), cpu = mean(gpuUtilPerc), mem = mean(gpuMemUtilPerc)) %>%
+                # Add event name and task id for current app_task event
+                mutate(eventName = app_task_2$eventName[i], taskId = app_task_2$taskId[i])
+        # Bind row to gpu_task df
+        gpu_task = rbind(gpu_task, as.data.frame(x))
+}
 
 
 
