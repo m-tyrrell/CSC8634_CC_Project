@@ -83,6 +83,40 @@ heat_vis = function(event, metric, outlier_var = 'duration', outlier_qty = 1, ca
 cache("heat_vis")
 
 
+##### Execution Time Plot - histograms showing distribution of execution times for each event type (Render & Tiling)
+
+# Look at start/stop times for each render and fit them into gpu stats based on timestamps
+plot_hist = function(df, var_col,event,lab=var_col, n=0.1, colour = 'white', rnd=2, a=0,b=1,c=0,d=1,e=0,f=1,g=0,h=1,i=1,j=1){
+        # Filter as per selected event
+        x = df %>%
+                filter(eventName == event)
+        # Setup histogram using ggplot
+        comp_hist_rend = ggplot(x, aes_string(var_col)) + 
+                geom_histogram(binwidth = n, fill=I("#0066CC"), col=I(colour), alpha=I(0.8))
+        # Get ymax of count to orientate annotations
+        ymax = max(ggplot_build(comp_hist_rend)$data[[1]]$count)
+        # Add vlines and annotations
+        comp_hist_rend +  geom_vline(xintercept = min(x[[var_col]]), color = 'darkgreen', linetype = 'dotdash') +
+                annotate("text", x=min(x[[var_col]]), y=ymax*b, label= paste("Min",round(min(x[[var_col]]),rnd)), size=2.5, hjust=a) +
+                # mean
+                geom_vline(xintercept = mean(x[[var_col]]), color = 'red', linetype = 'dotdash') +
+                annotate("text", x=mean(x[[var_col]]), y=ymax*d, label= paste("Arth. Mean",round(mean(x[[var_col]]),rnd)), size=2.5, hjust=c) +
+                # median
+                geom_vline(xintercept = median(x[[var_col]]), color = 'purple', linetype = 'dotdash') +
+                annotate("text", x=median(x[[var_col]]), y=ymax*f, label= paste("Median",round(median(x[[var_col]]),rnd)), size=2.5, hjust=e) +
+                # 95th percentile
+                geom_vline(xintercept = quantile(x[[var_col]], probs = seq(0, 1, 0.05), type = 6)[20], color = 'orange',linetype = 'dashed') + 
+                annotate("text", x=quantile(x[[var_col]], probs = seq(0, 1, 0.05), type = 6)[20], y=ymax*h, label= paste("95th Percentile",round(quantile(x[[var_col]], probs = seq(0, 1, 0.05), type = 6)[20],rnd)), size=2.5, hjust=g) +
+                # max
+                geom_vline(xintercept = max(x[[var_col]]), color = 'red', linetype = 'dotdash') +
+                annotate("text", x=max(x[[var_col]]), y=ymax*j, label= paste("Max",round(max(x[[var_col]]),rnd)), size=2.5, hjust=i) +
+                # Labels
+                labs(x = lab, y = "Frequency")
+        # length(x[[var_col]])
+}
+cache("plot_hist")
+
+
 ### Tabulate function 
 # (shows percentage)
 tblFun <- function(x){

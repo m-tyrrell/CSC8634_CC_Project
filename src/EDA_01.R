@@ -52,46 +52,42 @@ q2_samp = q2[x,]
 pairs(q2)
 
 
-##### Execution Times - histograms showing distribution of execution times for each event type (Render & Tiling)
+##### Execution Time Plot - histograms showing distribution of execution times for each event type (Render & Tiling)
 
-# Look at start/stop times for each render and fit them into gpu stats based on timestamps
-plot_hist = function(event, n=0.1, colour = 'white', rnd=2, a=0,b=1,c=0,d=1,e=0,f=1,g=0,h=1,i=1,j=1){
-        # Filter as per selected event
-        x = task_runtimes %>%
-                filter(eventName == event)
-        # Setup histogram using ggplot
-        comp_hist_rend = ggplot(x, aes(duration)) + 
-                geom_histogram(binwidth = n, fill=I("#0066CC"), col=I(colour), alpha=I(0.8))
-        # Get ymax of count to orientate annotations
-        ymax = max(ggplot_build(comp_hist_rend)$data[[1]]$count)
-        # Add vlines and annotations
-        comp_hist_rend +  geom_vline(xintercept = min(x$duration), color = 'darkgreen', linetype = 'dotdash') +
-                annotate("text", x=min(x$duration), y=ymax*b, label= paste("Min",round(min(x$duration),rnd)), size=2.5, hjust=a) +
-                # mean
-                geom_vline(xintercept = mean(x$duration), color = 'red', linetype = 'dotdash') +
-                annotate("text", x=mean(x$duration), y=ymax*d, label= paste("Arth. Mean",round(mean(x$duration),rnd)), size=2.5, hjust=c) +
-                # median
-                geom_vline(xintercept = median(x$duration), color = 'purple', linetype = 'dotdash') +
-                annotate("text", x=median(x$duration), y=ymax*f, label= paste("Median",round(median(x$duration),rnd)), size=2.5, hjust=e) +
-                # 95th percentile
-                geom_vline(xintercept = quantile(x$duration, probs = seq(0, 1, 0.05), type = 6)[20], color = 'orange',linetype = 'dashed') + 
-                annotate("text", x=quantile(x$duration, probs = seq(0, 1, 0.05), type = 6)[20], y=ymax*h, label= paste("95th Percentile",round(quantile(x$duration, probs = seq(0, 1, 0.05), type = 6)[20],rnd)), size=2.5, hjust=g) +
-                # max
-                geom_vline(xintercept = max(x$duration), color = 'red', linetype = 'dotdash') +
-                annotate("text", x=max(x$duration), y=ymax*j, label= paste("Max",round(max(x$duration),rnd)), size=2.5, hjust=i) +
-                # Labels
-                labs(x = "Execution Time (s)", y = "Frequency")
-                
-}
-cache("plot_hist")
+# Execution Time
+plot_hist(task_runtimes,'duration','Saving Config',lab = 'Execution Time (s)',colour='#0066CC',n=0.0001,rnd=4,d=0.95,f=0.9,h=0.85)
+plot_hist(task_runtimes,'duration','Tiling',lab = 'Execution Time (s)',n=0.005,c=1)
+plot_hist(task_runtimes,'duration','Render',lab = 'Execution Time (s)',n=0.5,c=1)
+plot_hist(task_runtimes,'duration','Uploading',lab = 'Execution Time (s)',colour='#0066CC',d=0.9,f=0.95,h=0.85)
 
-# Execution time plots
-plot_hist('Saving Config',colour='#0066CC',n=0.0001,rnd=4,d=0.95,f=0.9,h=0.85)
-plot_hist('Tiling', n=0.005,c=1)
-plot_hist('Render', n=0.5,c=1)
-plot_hist('Uploading',colour='#0066CC',d=0.9,f=0.95,h=0.85)
+# Power Consumption
+plot_hist(gpu_task,'watt','Render',lab = 'Power Consumption (W)', n=0.5,c=1)
+plot_hist(gpu_task,'watt','Tiling',lab = 'Power Consumption (W)', n=0.2,c=0,e=1)
+plot_hist(gpu_task,'watt','Uploading',lab = 'Power Consumption (W)', n=0.2,c=1)
+plot_hist(gpu_task,'watt','Saving Config',lab = 'Power Consumption (W)', n=0.2,c=0)
 
-# ggsave(file.path('graphs', 'Execution_Uploading.pdf'))
+# Temperature
+plot_hist(gpu_task,'temp','Render',lab = 'Temperature (C)', n=0.1,c=0,e=1)
+plot_hist(gpu_task,'temp','Tiling',lab = 'Temperature (C)', n=0.1,c=0,e=1)
+plot_hist(gpu_task,'temp','Uploading',lab = 'Temperature (C)', n=0.1,c=0,e=1)
+plot_hist(gpu_task,'temp','Saving Config',lab = 'Temperature (C)', n=0.1,c=1,e=0)
+
+# CPU
+plot_hist(gpu_task,'cpu','Render',lab = 'CPU (%)', n=0.1,c=1,e=0)
+#minimal data
+plot_hist(gpu_task,'cpu','Tiling',lab = 'CPU (%)', n=0.005,c=0,e=1)
+plot_hist(gpu_task,'cpu','Uploading',lab = 'CPU (%)', n=0.1,c=0,e=1)
+plot_hist(gpu_task,'cpu','Saving Config',lab = 'CPU (%)', n=0.1,c=0,e=1)
+
+# Memory
+plot_hist(gpu_task,'mem','Render',lab = 'Memory (%)', n=0.1,c=1,e=0)
+#minimal data
+plot_hist(gpu_task,'mem','Tiling',lab = 'Memory (%)', n=0.005,c=0,e=1)
+plot_hist(gpu_task,'mem','Uploading',lab = 'Memory (%)', n=0.1,c=0,e=1)
+plot_hist(gpu_task,'mem','Saving Config',lab = 'Memory (%)', n=0.1,c=0,e=1)
+
+
+
 
 
 
@@ -105,10 +101,9 @@ qqline(x$duration, col = "steelblue", lwd = 2)
 
 # Compare resource usage by tile (Q3b)
 # Filter and aggregate joined app_check/taskxy to display only relevant variables/tasks
+heat_vis('Render','duration',caption='off')
 
 
-# Summary statistics for render durations
-summary(comp_tile$duration)
 
 
 
@@ -145,7 +140,7 @@ summary(comp_gpu$avg_dur)
 
 
 # Compare GPU clusters by tile
-heat_vis('Render','temp',cap_label='off')
+heat_vis('Render','temp',caption='on')
 
 
         
