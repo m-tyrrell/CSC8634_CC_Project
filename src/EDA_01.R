@@ -106,6 +106,8 @@ gpu_ser = gpu %>%
         distinct(hostname, gpuSerial, .keep_all = FALSE) %>%
         arrange(gpuSerial)
 
+cache('gpu_ser')
+
 # Filter and aggregate joined app_check/taskxy to display only relevant variables/tasks
 comp_gpu = app_task %>%
         # Remove non-render tasks and all non level 12 observations (because there are basically none compared to level 12)
@@ -147,8 +149,6 @@ gpu_tile = app_task %>%
         left_join(gpu_ser, by = 'hostname') %>%
         # Specify conditional filter for heatmap
         mutate(outliers = ifelse(duration > 60,1,1000))
-# Drop unused variables (must be removed from dplyr pipe)
-gpu_tile = gpu_tile[,-(1:3)]
 
 # Specify column variable for heatmap
 variable = gpu_tile$outliers
@@ -217,4 +217,34 @@ gpu_plot_agg = gpu_task %>%
 
 
 
+
+# Compare resource usage by tile (ALL METRICS)
+# Filter and aggregate joined app_check/taskxy to display only relevant variables/tasks
+heat_vis = function(event, metric, outlier_var = 'duration', outlier_qty = 1){
+        comp_tile = app_task %>%
+                # Remove non-render tasks and all non level 12 observations (because there are basically none compared to level 12)
+                filter(eventName == event, level == 12) %>%
+                # Aggregate by taskId computing duration of task using difftime (for each taskId)
+                group_by(taskId, eventName, x, y) %>%
+                summarise(duration = as.numeric(difftime(last(timestamp), first(timestamp), unit = 'sec'))) %>%
+                # Order df by row vectors to prepare for reordering tile durations by tile coordinates
+                arrange(x,y) %>%
+                left_join(gpu_task)
+
+        # Specify conditional filter for heatmap (can't use dplyr pipe because of fun argument input issues (lazyeval possible solution))
+        comp_tile$outlier = ifelse(comp_tile[[outlier_var]] > outlier_qty,1,1000)
+                
+        # Specify column variable for heatmap
+        variable = comp_tile[[metric]]
+        
+        # Split duration vector into 256 row vectors
+        x = split(variable, ceiling(seq_along(variable)/256))
+        # Call mapping function   
+        map_matrix = build_map(x,256)
+        # Create heatmap of tile render durations
+        heatmap(map_matrix, Rowv=NA, Colv=NA, labRow=NA, labCol = NA, xlab = paste(event,'',toTitleCase(metric),' by Tile'))
+
+}
+
+heat_vis('Render','mem')
 
