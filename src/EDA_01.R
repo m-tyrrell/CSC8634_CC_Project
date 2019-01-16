@@ -136,29 +136,7 @@ summary(comp_gpu$avg_dur)
 
 
 # Compare GPU clusters by tile
-# Filter and aggregate joined app_check/taskxy to display only relevant variables/tasks
-gpu_tile = app_task %>%
-        # Remove non-render tasks and all non level 12 observations (because there are basically none compared to level 12)
-        filter(eventName == 'Render', level == 12) %>%
-        # Aggregate by taskId computing duration of task using difftime (for each taskId)
-        group_by(hostname, taskId, eventName, x, y) %>%
-        summarise(duration = as.numeric(difftime(last(timestamp), first(timestamp), unit = 'sec'))) %>%
-        # Order df by row vectors to prepare for reordering tile durations by tile coordinates
-        arrange(x, y) %>%
-        # Join stripped down gpu dataset on hostname
-        left_join(gpu_ser, by = 'hostname') %>%
-        # Specify conditional filter for heatmap
-        mutate(outliers = ifelse(duration > 60,1,1000))
-
-# Specify column variable for heatmap
-variable = gpu_tile$outliers
-
-# Split duration vector into 256 row vectors
-x = split(variable, ceiling(seq_along(variable)/256))
-# Call mapping function   
-map_matrix = build_map(x,256)
-# Create heatmap of tile render durations
-heatmap(map_matrix, Rowv=NA, Colv=NA, labRow=NA, labCol = NA, xlab = "")
+heat_vis('Render','temp',cap_label='off')
 
 
         
@@ -168,6 +146,20 @@ gpu_perf_avg = gpu %>%
         group_by(hostname, gpuSerial) %>%
         summarise(watt = mean(powerDrawWatt), temp = mean(gpuTempC), cpu = mean(gpuUtilPerc), mem = mean(gpuMemUtilPerc)) %>%
         arrange(gpuSerial)
+        
+gpu_perf_avg$index = 1:1024
+
+# Plot    
+ggplot(gpu_perf_avg ) + geom_point(aes(gpuSerial, watt)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') 
+ggplot(gpu_perf_avg ) + geom_point(aes(index, watt)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') 
+
+ggplot(gpu_perf_avg ) + geom_point(aes(gpuSerial, temp)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') 
+ggplot(gpu_perf_avg ) + geom_point(aes(index, temp)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') 
+ggplot(gpu_perf_avg ) + geom_boxplot(aes(index, temp)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') 
+
+
+ggplot(gpu_perf_avg ) + geom_point(aes(gpuSerial, cpu)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)')
+ggplot(gpu_perf_avg ) + geom_point(aes(gpuSerial, mem)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') 
 
 
 
@@ -217,34 +209,7 @@ gpu_plot_agg = gpu_task %>%
 
 
 
-
-# Compare resource usage by tile (ALL METRICS)
-# Filter and aggregate joined app_check/taskxy to display only relevant variables/tasks
-heat_vis = function(event, metric, outlier_var = 'duration', outlier_qty = 1){
-        comp_tile = app_task %>%
-                # Remove non-render tasks and all non level 12 observations (because there are basically none compared to level 12)
-                filter(eventName == event, level == 12) %>%
-                # Aggregate by taskId computing duration of task using difftime (for each taskId)
-                group_by(taskId, eventName, x, y) %>%
-                summarise(duration = as.numeric(difftime(last(timestamp), first(timestamp), unit = 'sec'))) %>%
-                # Order df by row vectors to prepare for reordering tile durations by tile coordinates
-                arrange(x,y) %>%
-                left_join(gpu_task)
-
-        # Specify conditional filter for heatmap (can't use dplyr pipe because of fun argument input issues (lazyeval possible solution))
-        comp_tile$outlier = ifelse(comp_tile[[outlier_var]] > outlier_qty,1,1000)
-                
-        # Specify column variable for heatmap
-        variable = comp_tile[[metric]]
         
-        # Split duration vector into 256 row vectors
-        x = split(variable, ceiling(seq_along(variable)/256))
-        # Call mapping function   
-        map_matrix = build_map(x,256)
-        # Create heatmap of tile render durations
-        heatmap(map_matrix, Rowv=NA, Colv=NA, labRow=NA, labCol = NA, xlab = paste(event,'',toTitleCase(metric),' by Tile'))
 
-}
 
-heat_vis('Render','mem')
 
