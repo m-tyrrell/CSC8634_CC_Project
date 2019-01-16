@@ -6,7 +6,7 @@ task_runtimes = app_task %>%
         # Remove all non-level 12
         filter(level == 12) %>%
         # Aggregate by task and event, taking difference between stop and start times as new column (duration)
-        group_by(taskId, eventName) %>%
+        group_by(taskId, eventName, hostname) %>%
         summarise(duration = as.numeric(difftime(last(timestamp), first(timestamp), unit = 'sec')))
 
 cache('task_runtimes')
