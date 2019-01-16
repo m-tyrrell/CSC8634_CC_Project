@@ -34,12 +34,7 @@ ggplot(gpu_t, aes(timestamp, gpuMemUtilPerc)) + geom_line()
 ##### QUESTIONS
 
 # Q1 Which tasks dominate runtimes?
-# For each different taskId, calculate difference in time for each task (stop - start) and enter in new column
-
-q1 = app_task %>%
-        # Aggregate by task and event, taking difference between stop and start times as new column (duration)
-        group_by(taskId, eventName) %>%
-        summarise(duration = as.numeric(difftime(last(timestamp), first(timestamp), unit = 'sec'))) %>%
+task_runtime_means = task_runtimes %>%
         # Aggregate by event taking mean of all observations for each event
         group_by(eventName) %>%
         summarise(mean_dur = mean(duration))
@@ -62,38 +57,41 @@ plot(q2_samp$gpuUtilPerc,q2_samp$gpuTempC)
 # Q3 Increased power draw and render time?
 # Want to look at gpu stats for each render (right?)
 # Look at start/stop times for each render and fit them into gpu stats based on timestamps
+plot_hist = function(event, n=0.1){
+        # Filter as per selected event
+        x = task_runtimes %>%
+                filter(eventName == event)
+        # Setup histogram using ggplot
+        comp_hist_rend = ggplot(x, aes(duration)) + geom_histogram(binwidth = n, fill=I("#0066CC"), col=I("white"), alpha=I(0.8))
+        # Get ymax of count to orientate annotations
+        ymax = max(ggplot_build(comp_hist_rend)$data[[1]]$count)
+        # Add vlines and annotations
+        comp_hist_rend +  geom_vline(xintercept = min(x$duration), color = 'darkgreen', linetype = 'dotdash') +
+                annotate("text", x=min(x$duration), y=ymax, label= paste("Min",round(min(x$duration),2)), size=2.5) +
+                # mean
+                geom_vline(xintercept = mean(x$duration), color = 'red', linetype = 'dotdash') +
+                annotate("text", x=mean(x$duration), y=ymax, label= paste("Arth. Mean",round(mean(x$duration),2)), size=2.5) +
+                # median
+                geom_vline(xintercept = median(x$duration), color = 'purple', linetype = 'dotdash') +
+                annotate("text", x=median(x$duration)*1.03, y=ymax*0.95, label= paste("Median",round(median(x$duration),2)), size=2.5) +
+                # 95th percentile
+                geom_vline(xintercept = quantile(x$duration, probs = seq(0, 1, 0.05), type = 6)[20], color = 'orange',linetype = 'dashed') + 
+                annotate("text", x=quantile(x$duration, probs = seq(0, 1, 0.05), type = 6)[20]*1.04, y=ymax, label= paste("95th Percentile",round(quantile(x$duration, probs = seq(0, 1, 0.05), type = 6)[20],2)), size=2.5) +
+                # max
+                geom_vline(xintercept = max(x$duration), color = 'red', linetype = 'dotdash') +
+                annotate("text", x=max(x$duration), y=ymax, label= paste("Max",round(max(x$duration),2)), size=2.5) +
+                # Labels
+                labs(x = "Duration (s)", y = "Count")
+}
+plot_hist('Tiling',0.001)
 
-q3 = app_task %>%
-        filter(eventName == 'Render') %>%
-        group_by(taskId, eventName, x, y) %>%
-        summarise(duration = as.numeric(difftime(last(timestamp), first(timestamp), unit = 'sec')))
 
-gpu_q3 = gpu %>%
-        arrange(hostname, timestamp)
-
-
+ggsave(file.path('graphs', 'dropout_by_step.pdf'))
 
 
 # Compare resource usage by tile (Q3b)
 # Filter and aggregate joined app_check/taskxy to display only relevant variables/tasks
-comp_tile = app_task %>%
-        # Remove non-render tasks and all non level 12 observations (because there are basically none compared to level 12)
-        filter(eventName == 'Render', level == 12) %>%
-        # Aggregate by taskId computing duration of task using difftime (for each taskId)
-        group_by(taskId, eventName, x, y) %>%
-        summarise(duration = as.numeric(difftime(last(timestamp), first(timestamp), unit = 'sec'))) %>%
-        # Order df by row vectors to prepare for reordering tile durations by tile coordinates
-        arrange(x,y)
 
-# Drop unused variables (must be removed from dplyr pipe)
-comp_tile = comp_tile[,-(1:2)]
-# Split duration vector into 256 row vectors
-x = split(comp_tile$duration, ceiling(seq_along(comp_tile$duration)/256))
-
-# Call mapping function   
-map_matrix = build_map(x,256)
-# Create heatmap of tile render durations
-heatmap(map_matrix, Rowv=NA, Colv=NA, labRow=NA, labCol = NA, xlab = "Relative Rendering Duration by Tile")
 
 # Summary statistics for render durations
 summary(comp_tile$duration)
@@ -141,13 +139,31 @@ heat_vis('Render','temp',cap_label='off')
 
         
 
-# Avg Resource usage by event
-gpu_perf_avg = gpu %>%
-        group_by(hostname, gpuSerial) %>%
-        summarise(watt = mean(powerDrawWatt), temp = mean(gpuTempC), cpu = mean(gpuUtilPerc), mem = mean(gpuMemUtilPerc)) %>%
-        arrange(gpuSerial)
-        
-gpu_perf_avg$index = 1:1024
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+gpu_plot = gpu_task %>%
+        filter(eventName == 'Uploading')
+
+
+plot(gpu_plot$temp)
+
+
+gpu_plot_agg = gpu_task %>%
+        group_by(eventName) %>%
+        summarise(watt = mean(watt), temp = mean(temp), cpu = mean(cpu), mem = mean(mem), n = n())
+
 
 # Plot    
 ggplot(gpu_perf_avg ) + geom_point(aes(gpuSerial, watt)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') 
@@ -164,52 +180,28 @@ ggplot(gpu_perf_avg ) + geom_point(aes(gpuSerial, mem)) + labs(x = 'GPU S/N', y 
 
 
 
-##### Compute mean resource usage for each event under each task
-# Arrange datasets in preparation for loop function
-gpu_perf = gpu %>%
-        arrange(hostname, timestamp)
-
-app_task_2 = app_task %>%
-        arrange(x, y, hostname, taskId, eventName, timestamp)
-
-# Designate empty dataframe
-gpu_task = data.frame()
-# Loop through app_task dataset computing mean resource usage for each event time window
-for(i in seq(1,length(app_task$timestamp),2)){
-        # Progress monitor
-        print(i)
-        # Filter and aggregate gpu dataset for each app_task event
-        x = gpu_perf %>%
-                filter(hostname == app_task_2$hostname[i]) %>%
-                filter(timestamp >= app_task_2$timestamp[i] & timestamp <= app_task_2$timestamp[i+1]) %>%
-                group_by(hostname, gpuSerial) %>%
-                summarise(watt = mean(powerDrawWatt), temp = mean(gpuTempC), cpu = mean(gpuUtilPerc), mem = mean(gpuMemUtilPerc)) %>%
-                # Add event name and task id for current app_task event
-                mutate(eventName = app_task_2$eventName[i], taskId = app_task_2$taskId[i])
-        # Bind row to gpu_task df
-        gpu_task = rbind(gpu_task, as.data.frame(x))
-}
-
-cache("gpu_task")
-
-
-gpu_plot = gpu_task %>%
-        filter(eventName == 'Uploading')
-
-
-plot(gpu_plot$temp)
-
-
-gpu_plot_agg = gpu_task %>%
-        group_by(eventName) %>%
-        summarise(watt = mean(watt), temp = mean(temp), cpu = mean(cpu), mem = mean(mem), n = n())
 
 
 
 
 
+gpu_render = comp_tile %>%
+        group_by(gpuSerial, eventName) %>%
+        summarise(watt = mean(watt), temp = mean(temp), cpu = mean(cpu), mem = mean(mem)) %>%
+        arrange(gpuSerial) %>%
+        filter(eventName == 'Render')
 
+ggplot(gpu_render) + geom_point(aes(gpuSerial, watt)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)')        
+
+
+length(gpu_render$gpuSerial)
+
+plot
         
 
+
+ggplot(gpu_task2[gpu_task2$taskId == '547b45b3-f045-41e8-be20-1e38d2663316',], aes(timestamp, powerDrawWatt)) + geom_line() 
+
+ggplot(gpu_task2[1:300,], aes(timestamp, powerDrawWatt)) + geom_line() 
 
 
