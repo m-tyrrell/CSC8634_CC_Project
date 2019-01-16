@@ -1,10 +1,13 @@
 # preprocessing script.
 
+##### Load Data
+
 # Load csv data file, correct timestamp using lubridate, convert factors to char, delete unused variable and cache
 gpu = read.csv(file = "data/gpu.csv")
 gpu$timestamp = ymd_hms(gpu$timestamp)
 gpu$hostname = as.character(gpu$hostname)
 gpu$gpuUUID = NULL
+
 cache("gpu")
 
 # Load each csv data file, correct timestamp using lubridate, convert factors
@@ -28,9 +31,9 @@ cache('app_task')
 
 
 
-#### Load functions
+##### Load functions
 
-#### Build Map
+## Build Map
 # Build matrix map from input vectors - used to reconstruct x,y coordinates in image form for heatmaps
 # Loop through list of row vectors, binding to empty df, then insert friendly column names
 build_map = function(x,n){
@@ -43,4 +46,15 @@ build_map = function(x,n){
 }
 
 cache("build_map")
+
+## Tabulate function 
+# (shows percentage)
+tblFun <- function(x){
+        tbl <- table(x)
+        res <- cbind(tbl,round(prop.table(tbl)*100,2))
+        colnames(res) <- c('Count','Percentage')
+        res
+}
+
+cache("tblFun")
 

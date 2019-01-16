@@ -1,0 +1,49 @@
+---
+title: "Report on Project Methodology"
+author: "Mark R. Tyrrell"
+date: "14/11/2018"
+output:
+  word_document: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+header-includes:
+- \usepackage{graphicx}
+- \usepackage{float}
+---
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir= normalizePath('..'))
+knitr::opts_chunk$set(fig.pos = 'H')
+# knitr::kable()
+```
+
+
+
+## CRISP-DM Framework
+
+The CRISP-DM methodology was difficult to internalise initially, being generic by nature. However, I found it extremely useful for providing focus to the report. For instance, there were many different avenues to explore with the data in terms of EDA, but by having distinct objectives in mind, it was easier to isolate substantive areas of analysis that aligned with the business objectives. As the CRISP-DM document states, it is often possible to provide the "right answers to the wrong questions". Having a clear analysis strategy in mind from the outset allows for much more efficient use of resources. 
+
+## Rmarkdown
+
+Using Rmarkdown was invaluable in this undertaking. The ability to integrate documentation production into a coding environment was very useful. At times I did miss the full page overview provided by a classic word processing program. However, the added advantage of having the document display and run code, as well as manage formatting made up for the somewhat lackluster interface.
+
+There was an inital learning curve with the utility, particularly with getting figures and tables to display in the correct position and with numbered captions. Additionally, pdf output was a struggle and involved quite a large amount of debugging. 
+
+
+## Project Template
+
+The project template library made organising the project extremely straightforward. I made use of the cache function extensively, to limit the need for excessive code chunks and processing within Rmarkdown. The original data was processed by the munge code, then cached as objects for further processing by the EDA files in the src folder. The original data remained untouched. I especially appreciated the ability to load the project effortlessly from Rmarkdown exclusively, without having to load to the global environment in RStudio.
+
+Additionally, the combination of Project Template with Rmarkdown greatly facilitated the reproducibility of this project. 
+
+## Testthat
+
+While I loaded the testthat library and ran some limited expirments with it, I didn't find a clear use for the library for this project. As I wasn't relying extensively on custom functions or classes, there was limited opportunity to use the functionality.
+
+## Version Control
+
+I made extensive use of git and github for this project (ref. gitlog). Although I didn't actually have cause to revert to previous branches, the ability to backup by version and upload to offsite storage was hugely comforting and supplemented my existing workflow of using standard file/folder cloud storage for backup. 
+
+

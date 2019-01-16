@@ -198,6 +198,22 @@ for(i in seq(1,length(app_task$timestamp),2)){
         gpu_task = rbind(gpu_task, as.data.frame(x))
 }
 
+cache("gpu_task")
+
+
+gpu_plot = gpu_task %>%
+        filter(eventName == 'Uploading')
+
+
+plot(gpu_plot$temp)
+
+
+gpu_plot_agg = gpu_task %>%
+        group_by(eventName) %>%
+        summarise(watt = mean(watt), temp = mean(temp), cpu = mean(cpu), mem = mean(mem), n = n())
+
+
+
 
 
 
