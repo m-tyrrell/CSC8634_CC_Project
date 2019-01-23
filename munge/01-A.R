@@ -111,7 +111,7 @@ plot_hist = function(df, var_col,event,lab=var_col, n=0.1, colour = 'white', rnd
                 geom_vline(xintercept = max(x[[var_col]]), color = 'red', linetype = 'dotdash') +
                 annotate("text", x=max(x[[var_col]]), y=ymax*j, label= paste("Max",round(max(x[[var_col]]),rnd)), size=2.5, hjust=i) +
                 # Labels
-                labs(x = lab, y = "Frequency")
+                labs(x = lab, y = "Frequency (n)")
         # length(x[[var_col]])
 }
 cache("plot_hist")

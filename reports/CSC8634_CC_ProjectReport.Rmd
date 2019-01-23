@@ -1,7 +1,7 @@
 ---
-title: "Learner Analytics for Newcastle University Online Course: Cyber Security"
+title: "Analysis of Terascope Benchmarking Data"
 author: "Mark R. Tyrrell"
-date: "14/11/2018"
+date: "23/01/2019"
 output:
   pdf_document: default
      
@@ -15,101 +15,108 @@ header-includes:
 
 ```{r setup, echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir= normalizePath('..'))
+knitr::opts_knit$set(root.dir= normalizePath('~/Desktop/DS_Projects/CSC8634_CC_Project'))
 knitr::opts_chunk$set(fig.pos = 'H')
 # knitr::kable()
 ```
 
 
+
 ```{r load_project, include=FALSE}
-library(ProjectTemplate); load.project()
+library(ProjectTemplate);load.project()
 
 ```
 
 
+```{r, echo=FALSE}
+
+```
+
 ## Introduction
 
-The Learning & Teaching Development Service (LTDS) at Newcastle University (NCU) has been operating the online course "Cyber Security: Safety at Home, Online, in Life" since early 2016. The course is delivered through the Futurelearn.com platform as a massive open online course (MOOC). The course operates on a freemium model. Learners can take the full course for free, but evaluation and certification require a payment. Learners are expected to complete the course in nine hours.
+ Visualization methods
+panoramic images show potential for visualizing multiscale urban data. accessible route to supercomputer visualizations on many low cost devices.
+Visual supercomputing
+deployed 14 PFlop cloud supercomputer, larger than any GPU HPC system in UK. cost in total for one result (a scaling graph) ~£20,000 using > £10 million computer. Azure improved (from K80 to V100) during the project, we immediately benefited. provides access to performance approx. 20 years ahead of current desktop systems.
 
-Despite the course having a large free-tier user-base, LTDS operates the course as revenue-generating enterprise. This analysis investigates factors contributing to the business performance of the course and makes recommendations on areas of improvement in alignment with the business objectives. 
 
 
+Background
+
+Terapixel images offer an intuitive, accessible way to present information sets to stakeholders, allowing viewers to interactively browse big data across multiple scales. The challenge we addressed here is how to deliver the supercomputer scale resources needed to compute a realistic terapixel visualization of the city of Newcastle upon Tyne and its environmental data as captured by the Newcastle Urban Observatory.
+
+Our solution is a scalable architecture for cloud-based visualization that we can deploy and pay for only as needed. The three key objectives of this work are to: create a supercomputer architecture for scalable visualization using the public cloud; produce a terapixel 3D city visualization supporting daily updates; undertake a rigorous evaluation of cloud supercomputing for compute intensive visualization applications.
+
+We demonstrate that it is feasible to produce a high quality terapixel visualization using a path tracing renderer in under a day using public IaaS cloud GPU nodes. Once generated the terapixel image supports interactive browsing of the city and its data at a range of sensing scales from the whole city to a single desk in a room, accessible across a wide range of thin client devices.
+
+Problem Description
+
+The dataset below was created from application checkpoint and system metric output from the production of a terapixel image. There are a variety of problems which can be addressed using the TeraScope dataset. Each will commence with an exploratory data analysis. Examples of questions you may wish to be able to answer through the EDA process are as follows:
+
+Which event types dominate task runtimes?
+What is the interplay between GPU temperature and performance?
+What is the interplay between increased power draw and render time?
+Can we quantify the variation in computation requirements for particular tiles?
+Can we identify particular GPU cards (based on their serial numbers) whose performance differs to other cards? (i.e. perpetually slow cards).
+What can we learn about the efficiency of the task scheduling process?
+A project may focus entirely on the EDA process, or you may also wish to develop a data product to allow interactive exploration of the data. For example, you could develop a Shiny dashboard to display the results of your analysis into render performance and system operation, displaying timelines of execution based on the application checkpoint data.
 
 
 ## 1. Summary of business understanding: background, objectives, and success criteria
 
-Evidence-driven decision making is a key contributor to success in business. Organisations are increasingly leveraging the data-collection capacities of their information technology (IT) systems to understand and respond to their customers. This phenomenon is readily apparent in the growing field of learning analytics; a toolset particularly to online course providers. In this regards, one of the key motivators for analytics is student retention. It is economically more efficient to expend resources on student retention than on recruitment marketing in the highly competitive education sector[1].
-
-Futurelearn provides basic analytics for course providers to evaluate the impact of their courses. These analytics are limited in scope and do not provide the customisation necessary for LTDS to extract meaningful insights from their users. However, the platform does allow access to raw data. These data form the basis of this analysis.
-
-Subsequent to consultations with LTDS, the primary objectives of the business were identified as follows:
-
-1. Increasing enrollment
-2. Improving course completion rate
-3. Increasing percentage of paid upgrades
-
-In translating the business objectives into analytical inquiry, the following key areas of analysis were identified:
-
-* Profile student demographics
-* Evaluate course completion performance metrics
-* Identify demographic predictors of course completion
-* Identify factors contributing to paid upgrades
-* Model predictors of course completion
-
-
-## 2. Summary of data mining process
-
-The data made available for this analysis consists of 53 tabular data files in comma-separated value (.csv) format covering seven different aspects of the course. In keeping with the objectives of the analysis, as well as time constraints, only two of the seven aspects were analysed. 
-
-The analysis took inspiration from the Open University analytics tool "OU Analyse"[1] which tracks and predicts learner outcomes based on demographics and virtual learning environment (VLE) data. As such, the analysis focuses on the **enrollments** and **step activity** aspects as these data provide sufficient attributes to address the analytical objectives of the report. 
-
-### 2.1 Enrolements Data
-
-The enrollments data tracks learner enrollment and completion dates, as well as general demographics. These data were provided in seven separate csv files containing identical variables with observations tracking learner data over different course runs. The seven files were joined and cleaned to produce a dataset of 37296 observations on 13 variables. The temporal dimensions of the dataset vary from March of 2016 through November 2018. A description of the variables is as follows:
-
- 1. **learner_id:** Unique identifier               
- 2. **enrolled_at:** Starting date of course             
- 3. **unenrolled_at:** Date of resignation from course (whether completed or not)           
- 4. **role:** Internal classifier used to distinguish learners from administrative auditors                   
- 5. **fully_participated_at:** Course completion date
- 6. **purchased_statement_at:** Upgrade purchase date (can be anytime during course or after)
- 7. **gender:** male/female/non-binary/other            
- 8. **country:** country of origin         
- 9. ***age_range:** "<18",">65","18-25","26-35","36-45","46-55","56-65","Unknown"       
- 10. **highest_education_level:** "apprenticeship", "less_than_secondary", "professional", "secondary",
- "tertiary", "university_degree", "university_doctorate", "university_masters", "Unknown"  
- 11. **employment_status:** "full_time_student", "looking_for_work", "not_working", "retired", "self_employed", 
- "unemployed", "Unknown", "working_full_time", "working_part_time"     
- 12. **employment_area:** 22 sectors      
- 13. **detected_country:** Country identification based on IP address
- 
 
 
 
-### 2.2 Step Activity Data
+## 2. Methodology
+Data analysis was conducted using the R programming language and the R Studio IDE, with the report composed in Rmarkdown. The **ProjectTemplate** library was used to organise the project and ensure reproducability. Version control was managed using git and Github. 
 
-The step activity data tracks learner progression by course step number, providing an entry each time a learner completes a step. These data were provided in seven separate csv files containing identical variables with observations tracking learner data over different course runs. The seven files were joined and cleaned to produce a dataset of 423072 observations on 6 variables. The temporal dimensions of the dataset vary from May of 2016 through November 2018. A description of the variables is as follows:
+An archived folder is available containing the original Rmarkdown .rmd file and git log. The folder is structured for standard data mining projects, including subfolders for data, cache, munge and source files. As the data analysis involves operations which require extended processing time, key objects have been cached as .Rdata files. The objects are called along the progression of the script (and Rmarkdown report), while the original code is included in the munge folder. Detailed instructions for reproducing the analysis are included in the main README file.
 
- 1. **learner_id:** Unique identifier               
- 2. **step:** Completed step number (subdivision of 3 sections)        
- 3. **week_number:** Week number from 1-3 associated with completed step according to course schedule           
- 4. **step_number:** Completed step number (absolute progressive step number)                 
- 5. **first_visited_at:** Course start date
- 6. **last_completed_at:** Course completion date
+### 2.1 Data Understanding
+
+The data made available for this analysis consists of 3 tabular data files in comma-separated value (.csv) format covering multiple aspects of the terapixel rendering process. The data files are detailed below.
+
+#### 2.1.1 Application Checkpoints (application-checkpoints.csv 111.2MB)
+This file contains 660,400 observations over 6 variables detailing application checkpoint events throughout the execution of the render job. 
+
+1. **timestamp**   Timestamp of observation entry
+2. **hostname**    Hostname of the virtual machine auto-assigned by the Azure batch system.
+3. **eventName**   Name of the event occuring within the rendering application. Possible Values:
+    + **Tiling**    Tiling is where post processing of the rendered tile is taking place
+    + __Saving__    Config Saving Config is simply a measure of configuration overhead
+    + __Render__    Render is when the image tile is is being rendered
+    + __TotalRender__ TotalRender is the entire task
+    + __Uploading__ Uploading is where the output from post processing is uploaded to Azure Blob Storage
+
+4. **eventType** Possible Values: __START__, __STOP__
+5. **jobId** ID of the Azure batch job.
+6. **taskId** ID of the Azure batch task.
+
+#### 2.1.2 GPU (gpu.csv 208.7MB)
+This file contains 1,543,681 observations over 8 variables detailing metrics that were output regarding the status of the GPU on the virtual machine.
+
+1. **timestamp**   Timestamp of observation entry
+2. **hostname**    Hostname of the virtual machine auto-assigned by the Azure batch system.
+3. **gpuSerial** The serial number of the physical GPU card.
+4. **gpuUUID** The unique system id assigned by the Azure system to the GPU unit. 
+5. **powerDrawWatt** Power draw of the GPU in watts.
+6. **gpuTempC** Temperature of the GPU in Celsius
+7. **gpuUtilPerc** Percent utilisation of the GPU Core(s).
+8. **gpuMemUtilPerc** Percent utilisation of the GPU memory.
+
+#### 2.1.3 Task X Y (task-x-y.csv 6.2MB)
+This file contains 65,793 observations over 5 variables detailing the tile x,y co-ordinates of which part the image was being rendered for each task.
+
+1. **jobId** ID of the Azure batch job.
+2. **taskId** ID of the Azure batch task.
+3. **x** X co-ordinate of the image tile being rendered.
+4. **y** Y co-ordinate of the image tile being rendered.
+5. **level** The visualisation created is a zoomable "google maps style" map. In total we create 12 levels. Level 1 is zoomed right out and level 12 is zoomed right in. You will only see levels 4, 8 and 12 in the data as the intermediate level are derived in the tiling process.
 
 
+### 3.1 Data Preparation
 
-
-## 3. Summary of data mining results
-
-The datesets were subject to various processes of cleaning, transformation, subsetting and aggregation to meet the requirements of the individual analyses. The datasets were also joined by key variables for certain analyses.
-
-
-
-
-### 3.1 Profile of Student Demographics
-
-On enrollment, learners are requested to enter demographic details. These data are contained in the enrollments dataset. Country data was automatically collected in almost all cases by resolving the IP address used by the student to access the service. Unfortunately, as the entry is voluntary, only 10 percent of users entered data pertinent to gender, age, education and employment status. However, after filtering out null data, the resultant dataset contains 3819 observations, and is therefore a relevant sample from which to extract inferences about the larger user base. 
+The csv files were read into R
 
 
 #### 3.1.1 Gender

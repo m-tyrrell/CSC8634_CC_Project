@@ -9,6 +9,9 @@
 # GpuSerial: 1024
 # GPuUUID: 1024
 
+# Task scheduling (durations): Total Render = Saving Config + Render + Uploading (Does not include Tiling!)
+f = 0
+sum(task_runtimes[(f+1):(f+2),4]) + sum(task_runtimes[(f+5),4]) - sum(task_runtimes[(f+4),4])
 
 
 ##### EDA
@@ -45,20 +48,22 @@ q2 = gpu %>%
         select(4:7)
 
 # Take sample of q2 index
-x = sample(1:dim(q2)[1],1000)
+x = sample(1:dim(q2)[1],2000)
 # Slice q2 by sample
 q2_samp = q2[x,]
 
-pairs(q2)
+pairs(q2_samp)
+
+
 
 
 ##### Execution Time Plot - histograms showing distribution of execution times for each event type (Render & Tiling)
 
 # Execution Time
-plot_hist(task_runtimes,'duration','Saving Config',lab = 'Execution Time (s)',colour='#0066CC',n=0.0001,rnd=4,d=0.95,f=0.9,h=0.85)
-plot_hist(task_runtimes,'duration','Tiling',lab = 'Execution Time (s)',n=0.005,c=1)
 plot_hist(task_runtimes,'duration','Render',lab = 'Execution Time (s)',n=0.5,c=1)
+plot_hist(task_runtimes,'duration','Tiling',lab = 'Execution Time (s)',n=0.005,c=1)
 plot_hist(task_runtimes,'duration','Uploading',lab = 'Execution Time (s)',colour='#0066CC',d=0.9,f=0.95,h=0.85)
+plot_hist(task_runtimes,'duration','Saving Config',lab = 'Execution Time (s)',colour='#0066CC',n=0.0001,rnd=4,d=0.95,f=0.9,h=0.85)
 
 # Power Consumption
 plot_hist(gpu_task,'watt','Render',lab = 'Power Consumption (W)', n=0.5,c=1)
@@ -73,14 +78,14 @@ plot_hist(gpu_task,'temp','Uploading',lab = 'Temperature (C)', n=0.1,c=0,e=1)
 plot_hist(gpu_task,'temp','Saving Config',lab = 'Temperature (C)', n=0.1,c=1,e=0)
 
 # CPU
-plot_hist(gpu_task,'cpu','Render',lab = 'CPU (%)', n=0.1,c=1,e=0)
+plot_hist(gpu_task,'cpu','Render',lab = 'CPU (%)', n=0.2,c=1,e=0)
 #minimal data
 plot_hist(gpu_task,'cpu','Tiling',lab = 'CPU (%)', n=0.005,c=0,e=1)
 plot_hist(gpu_task,'cpu','Uploading',lab = 'CPU (%)', n=0.1,c=0,e=1)
 plot_hist(gpu_task,'cpu','Saving Config',lab = 'CPU (%)', n=0.1,c=0,e=1)
 
 # Memory
-plot_hist(gpu_task,'mem','Render',lab = 'Memory (%)', n=0.1,c=1,e=0)
+plot_hist(gpu_task,'mem','Render',lab = 'Memory (%)', n=0.2,c=1,e=0)
 #minimal data
 plot_hist(gpu_task,'mem','Tiling',lab = 'Memory (%)', n=0.005,c=0,e=1)
 plot_hist(gpu_task,'mem','Uploading',lab = 'Memory (%)', n=0.1,c=0,e=1)
@@ -93,7 +98,7 @@ plot_hist(gpu_task,'mem','Saving Config',lab = 'Memory (%)', n=0.1,c=0,e=1)
 
 # Test for normality
 x = task_runtimes %>%
-        filter(eventName == 'Tiling')
+        filter(eventName == 'Render')
 
 qqnorm(x$duration, pch = 1, frame = FALSE)
 qqline(x$duration, col = "steelblue", lwd = 2)
@@ -101,7 +106,7 @@ qqline(x$duration, col = "steelblue", lwd = 2)
 
 # Compare resource usage by tile (Q3b)
 # Filter and aggregate joined app_check/taskxy to display only relevant variables/tasks
-heat_vis('Render','duration',caption='off')
+heat_vis('Render','duration',caption='on')
 
 
 
@@ -129,9 +134,11 @@ comp_gpu = task_runtimes %>%
 
 
 # Plot render time by S/N        
-ggplot(comp_gpu) + geom_point(aes(gpuSerial, avg_dur)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') + geom_hline(yintercept = mean(comp_gpu$avg_dur), color = 'red')
+ggplot(comp_gpu) + geom_point(aes(gpuSerial, avg_dur)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') + 
+        geom_hline(yintercept = mean(comp_gpu$avg_dur), color = 'red')
 # Plot render time by S/N index to more easily show spread
-ggplot(comp_gpu) + geom_point(aes(index, avg_dur)) + labs(x = 'GPU S/N index', y = 'Mean Render Time (s)') + geom_hline(yintercept = mean(comp_gpu$avg_dur), color = 'red')
+ggplot(comp_gpu) + geom_point(aes(index, avg_dur)) + labs(x = 'GPU S/N index', y = 'Mean Render Time (s)') + 
+        geom_hline(yintercept = mean(comp_gpu$avg_dur), color = 'red')
 
 # Seems to be a distinct clustering of mean rendering times into approximately 2 clusters around the mean (41.3s)
 summary(comp_gpu$avg_dur)
@@ -140,7 +147,7 @@ summary(comp_gpu$avg_dur)
 
 
 # Compare GPU clusters by tile
-heat_vis('Render','temp',caption='on')
+heat_vis('Render','watt',caption='on')
 
 
         
@@ -154,28 +161,24 @@ gpu_plot_agg = gpu_task %>%
         summarise(watt = mean(watt), temp = mean(temp), cpu = mean(cpu), mem = mean(mem), n = n())
 
 
-# Plot    
-ggplot(gpu_render) + geom_point(aes(gpuSerial, watt)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)')
-ggplot(gpu_perf_avg ) + geom_point(aes(index, watt)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') 
-
-ggplot(gpu_perf_avg ) + geom_point(aes(gpuSerial, temp)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') 
-ggplot(gpu_perf_avg ) + geom_point(aes(index, temp)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') 
-ggplot(gpu_perf_avg ) + geom_boxplot(aes(index, temp)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') 
-
-
-ggplot(gpu_perf_avg ) + geom_point(aes(gpuSerial, cpu)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)')
-ggplot(gpu_perf_avg ) + geom_point(aes(gpuSerial, mem)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') 
-
-
-
 gpu_render = gpu_task %>%
         filter(eventName == 'Render') %>%
         group_by(gpuSerial, eventName) %>%
         summarise(watt = mean(watt), temp = mean(temp), cpu = mean(cpu), mem = mean(mem)) %>%
         arrange(gpuSerial)
+
+# Render event: Performance plots by S/N
+ggplot(gpu_render) + geom_point(aes(gpuSerial, watt)) + labs(x = 'GPU S/N', y = 'Power Consumption (s)')
+ggplot(gpu_render) + geom_point(aes(gpuSerial, temp)) + labs(x = 'GPU S/N', y = 'Temperature (C)') 
+ggplot(gpu_render) + geom_point(aes(gpuSerial, cpu)) + labs(x = 'GPU S/N', y = 'CPU (%)')
+ggplot(gpu_render) + geom_point(aes(gpuSerial, mem)) + labs(x = 'GPU S/N', y = 'Memory (%)') 
+
+
+
+
         
 
-ggplot(gpu_render) + geom_point(aes(gpuSerial, watt)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)')        
+     
 
 
 
