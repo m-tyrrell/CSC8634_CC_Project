@@ -32,7 +32,7 @@ library(ProjectTemplate);load.project()
 
 ```
 
-## 1. Introduction
+# 1. Introduction
 
  Visualization methods
 panoramic images show potential for visualizing multiscale urban data. accessible route to supercomputer visualizations on many low cost devices.
@@ -41,7 +41,7 @@ deployed 14 PFlop cloud supercomputer, larger than any GPU HPC system in UK. cos
 
 
 
-## 2. Background
+# 2. Background
 
 Terapixel images offer an intuitive, accessible way to present information sets to stakeholders, allowing viewers to interactively browse big data across multiple scales. The challenge we addressed here is how to deliver the supercomputer scale resources needed to compute a realistic terapixel visualization of the city of Newcastle upon Tyne and its environmental data as captured by the Newcastle Urban Observatory.
 
@@ -65,18 +65,18 @@ A project may focus entirely on the EDA process, or you may also wish to develop
 
 
 
-## 3. Methodology
+# 3. Methodology
 Data analysis was conducted using the R programming language and the R Studio IDE, with the report composed in Rmarkdown. The **ProjectTemplate** library was used to organise the project and ensure reproducability. Version control was managed using git and Github. 
 
 An archived folder is available containing the original Rmarkdown .rmd file and git log. The folder is structured for standard data mining projects, including subfolders for data, cache, munge and source files. As the data analysis involves operations which require extended processing time, key objects have been cached as .Rdata files. The objects are called along the progression of the script (and Rmarkdown report), while the original code is included in the munge folder. Detailed instructions for reproducing the analysis are included in the main README file.
 
 The original csv data files are too large for Github at 300+ MB. Therefore they are not included in the archived project folder. A download link can be found in the README file. 
 
-### 3.1 Data Understanding
+## 3.1 Data Understanding
 
 The data made available for this analysis consists of 3 tabular data files in comma-separated value (.csv) format covering multiple aspects of the terapixel rendering process. The data files are detailed below.
 
-#### 2.1.1 Application Checkpoints (application-checkpoints.csv 111.2MB)
+### 3.1.1 Application Checkpoints (application-checkpoints.csv 111.2MB)
 This file contains 660,400 observations over 6 variables detailing application checkpoint events throughout the execution of the render job. 
 
 1. **timestamp**   Timestamp of observation entry
@@ -92,7 +92,7 @@ This file contains 660,400 observations over 6 variables detailing application c
 5. **jobId** ID of the Azure batch job (Total: 3 one for each level 4, 8 and 12)
 6. **taskId** ID of the Azure batch task (Total: 65793 level 4 1x1; level 8 16x16; level 12 256x256)
 
-#### 3.1.2 GPU (gpu.csv 208.7MB)
+### 3.1.2 GPU (gpu.csv 208.7MB)
 This file contains 1,543,681 observations over 8 variables detailing metrics that were output regarding the status of the GPU on the virtual machine.
 
 1. **timestamp**   Timestamp of observation entry
@@ -104,7 +104,7 @@ This file contains 1,543,681 observations over 8 variables detailing metrics tha
 7. **gpuUtilPerc** Percent utilisation of the GPU Core(s)
 8. **gpuMemUtilPerc** Percent utilisation of the GPU memory
 
-#### 3.1.3 Task X Y (task-x-y.csv 6.2MB)
+### 3.1.3 Task X Y (task-x-y.csv 6.2MB)
 This file contains 65,793 observations over 5 variables detailing the tile x,y co-ordinates of which part the image was being rendered for each task.
 
 1. **jobId** ID of the Azure batch job (Total: 3 one for each level 4, 8 and 12)
@@ -114,20 +114,22 @@ This file contains 65,793 observations over 5 variables detailing the tile x,y c
 5. **level** The visualisation created is a zoomable "google maps style" map. In total we create 12 levels. Level 1 is zoomed right out and level 12 is zoomed right in. You will only see levels 4, 8 and 12 in the data as the intermediate level are derived in the tiling process.
 
 
-### 3.2 Data Preparation
+## 3.2 Data Preparation
 
 The csv files were read into R and reviewed. Data types were changed as required (eg. timestamps, factors to char etc). In the case of the GPU dataset, the extraneous column **gpuUUID** was dropped, as it was redundant with **gpuSerial** as a unique identifier. The Task X Y dataset was fully merged into the Application Checkpoint dataset, as it contained only 3 unique columns. The resulting object **app_task** was cached along with the **gpu** object for the GPU dataset, after checking for NAs. These cached objects form the basis of the analysis.
 
 The analysis made heavy use of the Dplyr package to transform and filter **app_task** and **gpu**. Multiple analyses were based on transformed datasets that required extensive processing time. These datasets were cached as objects, with the original code included in the munge folder. This function was particularly exemplified in the form of the **gpu_task** dataset, which was the output of the computation of mean resource usage for each event under each of the 65793 level 4 tasks in the **app_task** dataset. This computation took three hours on a Corei5 system.
 
 
-## 4 Exploratory Data Analysis
+# 4. Exploratory Data Analysis
 
-As detailed in section 2.2, the data show 1024 unique VMs, each with an attached GPU. These 1024 GPUs were used to render 65,793 unique tiling jobs identified by a unique task number. 
+As detailed in section 2.2, the data show 1024 unique VMs, each with an attached GPU. These 1024 GPUs were used to render 65,793 pixels generation operations identified by a unique task ID. The four phases of pixel generation are: Saving Config, Rendering, Tiling and Uploading. Each of these phases is logged in the **app_task** dataset, once at the start of the phase, and once at the end. In addition, a fifth entry is made for the total rendering process. This results in 10 observations for each pixel generation. 
+
+## 4.1 Examination of Single GPU
 
 The performance data over the first 10 minutes for a sample GPU (S/N: 323617042631) are displayed in Figure 1. The cycles for each tiling job can be clearly seen in the plot for each metric. Each tiling job took appears to take approximately 40 seconds. GPU utlisation percentage appears relatively uniform for each tiling job at approximately 90%, whereas there is more variation on the other metrics. This is possibly a result of a percentage usage software limit on the GPU. Unsurprisingly, the temperature builds up from a cold start over successive tiling jobs. 
 
-```{r eda_01, fig.cap = "Sample GPU Performance Metrics over Time", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
+```{r eda_f01, fig.cap = "Sample GPU Performance Metrics over Time", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
 # Create index column with accessible numbers for each gpu serial number
 gpu_id = data.frame(gpuSerial = sort(unique(gpu$gpuSerial)), id =  1:1024)
 # Create a copy of gpu dataset and insert gpu index vector
@@ -149,9 +151,11 @@ p4 = ggplot(gpu_t, aes(timestamp, gpuMemUtilPerc)) + geom_line(color='#0066CC') 
 grid.arrange(p1, p2, p3, p4, ncol=2)
 ```
 
+## 4.2 GPU Performance Metrics Correlation
+
 Figure 2 displays scatter plots of the GPU performance metrics correlations. As the GPU dataset is extremely large at 1.5 million observations, a random sample of 10,000 was selected for the plots. As demonstrated, there is a postive correlation between all of the metrics. However, there is also significant variation. This finding matches the observations taken from Figure 1. The positive correlation is to be expected, as the increased workload on the GPU in the form of GPU utilisation percentage will naturally require associated memory for the tiling job, and the demands of this utilisation on the hardware components will result in increased power consumption and rising temperature. 
 
-```{r eda_02, fig.cap = "GPU Performance Metrics Correlation", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
+```{r eda_f02, fig.cap = "GPU Performance Metrics Correlation", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
 # Q2 interplay between GPU Performance metrics
 q2 = gpu %>%
         select(4:7)
@@ -172,9 +176,13 @@ p10 = ggplot(q2_samp, aes(gpuTempC, gpuMemUtilPerc)) + geom_point(size=0.25) + s
 grid.arrange(p5, p6, p7, p8, p9, p10, ncol=3)
 ```
 
+## 4.3 GPU Performance Metrics Analysis
+
+### 4.3.1 GPU Performance Summary Statistics
+
 Table 1 displays the mean of each GPU performance metric by each event. The rendering task is easily identifiable as the most energy-intense phase of the tiling job, with power consumption more than double that of the second highest, tiling. There is much less variation in relative temperatures, though rendering is still noteably higher in mean temperature than the other phases. 
 
-```{r eda_03, echo=FALSE, cache=TRUE}
+```{r eda_t01, echo=FALSE, cache=TRUE}
 # Table showing means of all gpu metrics for each task mean by event
 gpu_plot_agg = gpu_task %>%
         filter(eventName != 'TotalRender') %>%
@@ -191,7 +199,7 @@ Table 2 provides quantified insight into this effect by detailing the mean runti
 
 The presence of power and temperature data for the underrepresented phases in the absence of corresponding GPU and memory data remains questionable. It is likely the temperature metric follows a heat loading dynamic, taking time to cool off after each rendering phase. The negative corrollary of this effect was already observed (ref. Figure 1). The power metric can assumed to be exhibiting baseline consumption. With regard to GPU and memory, the phases in question can be assumed to put only relatively low strain on the hardware resources. Therefore it is not surprising to see zero utilisation on these metrics, as any small percent utilisation caught by the sampling process would be effectively zeroed out by the mean operation. 
 
-```{r eda_03x, echo=FALSE, cache=TRUE}
+```{r eda_t02, echo=FALSE, cache=TRUE}
 # Q1 Which tasks dominate runtimes?
 task_runtime_means = task_runtimes %>%
         # Aggregate by event taking mean of all observations for each event
@@ -199,40 +207,44 @@ task_runtime_means = task_runtimes %>%
         group_by('Event' = eventName) %>%
         summarise('Duration (s)' = round(mean(duration),3), n = n())
 
-knitr::kable(task_runtime_means, booktabs = TRUE, caption = 'Mean Runtime Durations by Event (Level 12 only)')
+knitr::kable(task_runtime_means, booktabs = TRUE, caption = 'Mean Execution Time by Event (Level 12 only)')
 ```
 
+### 4.3.2 GPU Performance Metrics Distribution
 
+The summary statisics for the GPU performance metrics provide a succinct method for comparing the various phases in terms of impact on system resources. However, they provide only limited insight the actual system performance. A more robust method of benchmarking high performance computational systems is to analyse quantiles[1]. 
 
+Figure 3 displays the distributions of execution time for each pixel generation. The top plot presents the execution time for rendering and the bottom for the tiling phase. Both distributions appear bimodal, with the larger mode appearing mostly normal with a skew to the right. The smaller mode appears to represents a group of GPUs which exhibit significantly higher performance. 
 
-```{r eda_04, fig.cap = "Distribution by Execution Time: Render \\& Tiling", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
+The features of the render distribution highlight the importance of documenting system performance beyond summary statistics. The long tail to the right demonstrates the large variance in system performance. Were one to assume a normal distribution, the standard deviation for the render execution time distribution would be calculated as 6.047s. Therefore the maximum execution time at 81.51s would not be conceivable (as a 6.7 sigma event) on such a small dataset. 
+
+```{r eda_f03, fig.cap = "Distribution by Execution Time: Render \\& Tiling", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
 ##### Execution Time Plot - histograms showing distribution of execution times for each event type (Render & Tiling)
 grid.arrange(p12, p13, ncol=1)
 ```
 
+The bimodal characteristics of the distributions in Figure 3 are more pronounced for the rendering phase distribution; a finding which is logical given the doubled sample size for the rendering phase, as well as the vastly larger quantity of GPU logging data available over the 40+ second phase duration. Additionally as the time scale for the rendering phase is relatively large compared to tiling, it is easier to inherently comprehend the effects of variance on the operation through visualisation. As the comparative performance and relationship between the render phase and all other phases has already been established in previous sections, from this point the render phase will be examined exlcusively in order to further evaluate system performance. 
 
+Figure 4 displays the distribution of Power Consumption and Temperature 
 
+```{r eda_f04, fig.cap = "Distribution by Power Consumption \\& Temperature: Render", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
+grid.arrange(p14, p15, ncol=1)
+```
 
-
-
-```{r eda_06, fig.cap = "Distribution by Power Consumption: Render \\& Tiling", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
+```{r eda_f05, fig.cap = "Distribution by GPU \\& Memory \\% Utilisation: Render", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
 grid.arrange(p16, p17, ncol=1)
 ```
 
 
 
-
-```{r eda_08, fig.cap = "Distribution by Temperature: Render \\& Tiling", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
-grid.arrange(p20, p21, ncol=1)
-```
-
-```{r eda_09, fig.cap = "Distribution by GPU \\& Memory: Render", fig.pos = "H", out.width='100%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=FALSE}
-grid.arrange(p22, p23, ncol=1)
-grid.arrange(p20,p21,p22, p23, ncol=2)
+```{r eda_f06, fig.cap = "QQ Plot for GPU Performance Metrics", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
+grid.arrange(p19, p20, p21, p22, ncol=2)
 ```
 
 
-```{r eda_10, fig.cap = "Distribution by GPU \\& Memory: Render", fig.pos = "H", out.width='100%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
+
+
+```{r eda_f07, fig.cap = "Distribution by GPU \\& Memory: Render", fig.pos = "H", out.width='100%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
 # knitr::include_graphics(path = "../graphs/p24.pdf")
 grid.arrange(i1, i2, i3, i9, i7, i5, ncol = 3)
 ```
@@ -242,142 +254,16 @@ grid.arrange(i1, i2, i3, i9, i7, i5, ncol = 3)
 
 
 
-### 3.2 Evaluate Course Completion Performance Metrics
-
-Measurement of student performance is critical in any education system, even in a largely cost-free online course. Poor performance can reflect poorly on the student satisfaction, and therefore completion rate. The enrollment dataset contains numerous interesting data in this regard.
-
-
-#### 3.2.1 Course Completion Metrics
-
-Of the 37,296 students who enrolled, only 2154 completed the course. This results in a completion rate of 5.8 percent. While low, this rate fits closely with the standard completion rate for MOOCs of 5.5 percent[2]. As the barrier for entrance is small, MOOCs attract a great deal of prospective students. 
-
-The enrollment dataset contains a date for enrollment and a separate date for course completion. From this, the number of days taken to complete the course were derived. A histogram of these data is presented in Figure 2. 
-
-At registration, the course is estimated to take three weeks to complete at an input level of three hours per week. The data show that this is not the case. According to the enrollments data the median days to completion was 40. The mean was 71, a skew to the right clearly represented in Figure 2. However, it must be noted that the data source for this metric encompasses total time between enrollment and completion, rather than the actual time necessary to complete each section of the course (ref. Section 3.2.2).
-
-It is interesting to note the bi-modal nature of the distribution, with approximately 15 percent of students completing the course around the 125 day mark. This may be the result of auto-scheduled email prompts or other such communication.
-
-```{r eda_11, fig.cap = "Distribution by CPU \\& Memory: Render", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide'}
-# ##### Completion Data (n = 2154)
-
-```
 
 
 
 
-#### 3.2.2 Course Step Duration
-
-The step activity dataset provides a record of the 23 course steps completed by each user, including the start and finish dates. From these data, the number of days taken to complete the step were derived. A column chart of these data is presented in Figure 3, showing the average duration for completion of each step. For clarity, the sub-steps between the following sections were removed from the chart:
-
-* step 1.11 through step 1.19
-* step 2.11 through step 2.19
-* step 2.21 through step 2.29
-* step 3.11 through step 3.19
-
-The sum of the average durations for each section displayed in Figure 3 is 25.8 days. However, with the filtered subs-steps added, the total mean is 42.9 days. As with the findings in section 3.2.1, this figure is in excess of the three weeks completion estimate provided at course registration.  
-
-As demonstrated by the chart, section one takes longer for users to complete on average, with a notable downward trend for each section as the course progresses. This trend is with the exception of the outlier (step 3.21) which at approximately 8 days, took significantly longer on average for the students to complete. It is unclear from this analysis why this particular step took so long to complete.
-
-```{r comp_duration, fig.cap = "Average Completion Duration per Step (days): Section 1.0", fig.pos = "H", out.width='80%', fig.asp=.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide'}
-# #Plot average days per step
-# ggplot(df_step_avg, aes(step, total_days)) + geom_col(size = 1, fill=I("#0066CC"), colour = "#0066CC", alpha=I(0.8)) + 
-#         labs(x = "Step #", y = "Days")  + 
-#         scale_x_continuous(breaks = round(seq(min(df_step_avg$step), max(df_step_avg$step), by = 0.1),1))
-```
-
-
-#### 3.2.3 Course Dropout Stage
-
-The inclusion of a unique identifier (learner_id) in the step activity dataset allowed for analysis of the maximum step completed by each learner. As with section 3.2.2, the sub-steps were removed from the analysis for clarity. The findings are presented as a histogram in Figure 4. The distribution count across each step closely follows the average step completion duration data outlined in section 3.3.2, including the outlier (step 3.21), but with the exception of the initial step (1.1). Fully 32 percent of learners fail to continue the course after step 1.1. 
-
-```{r dropouts, fig.cap = "Dropouts: Last Step Completed", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide'}
-#Plot frequency of drop out by step number
-# ggplot(df_step_drop, aes(step)) + geom_histogram(binwidth = 0.1, fill=I("#0066CC"), col=I("white"), alpha=I(0.8)) + 
-#         labs(x = "Step #", y = "Count (# of Learners)") + theme(text = element_text(size=8)) +
-#         scale_x_continuous(breaks = round(seq(min(df_step_drop$step), max(df_step_drop$step), by = 0.1),1))
-# # ggsave(file.path('graphs', 'step_drop.pdf'))
-```
 
 
 
 
-### 3.3 Identify Demographic Predictors of Course Completion
-
-As stated in section 3.1, submission of demographic information for learners is voluntary. As such, only approximately 10 percent of observations contained complete demographic data. However, this resulted in a dataset containing 3819 observations. Assuming the population distribution is normal, and the process for obtaining the data was random (i.e. learners who submitted demographic data were not skewed toward a specific subset), the sample size is large enough to meet the conditions for inference. Therefore substantive conclusions can be made about the overall learner population from this sample with reasonable confidence. 
-
-In the following sections, the filtered dataset is analysed by subset, in order to form hypotheses about predictors of success based on demographic data. 
-
-#### 3.3.1 Performance by Gender
-
-The data demonstrated in Figure 5 a) show a pronounced tendency for male students to achieve higher step progress than their female counterparts. The difference in medians is fully half a section higher, with a less distinct difference in interquartile range (IQR). Though this finding would seem to support common stereotypes of gender roles, the gap in achievement is notable in that it is significantly less than the overall trend. A recent study in the United States[3] found that women were vastly underrepresented in science, technology, engineering and mathematics (STEM) fields, at only 29 percent. These findings are therefore encouraging.
 
 
-
-#### 3.3.2 Performance by Age Range
-
-Perhaps surprisingly for an IT-focused course, the data show a marked progression in step completion with increasing age ranges. Referring to Figure 5 b), the ranges from age 56 upwards demonstrate a clear proclivity for older people to achieve higher completion rates with the course. The median for both ranges is greater than section three; a marked contrast to the medians for the first three age ranges, which fail to complete section one. 
-
-
-```{r pred-vars, fig.cap = "Step Completion by Variable", fig.pos = "H", out.width='100%', fig.asp=1.1, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide'}
-# grid.arrange(p1, p2, p3, p4, ncol=2)
-```
-
-
-#### 3.3.3 Performance by Education
-
-The determinants of appear to be somewhat correlated with step completion outcomes for the course. Referring to Figure 5 c), there is notably upwards trend from less-than secondary level, through post-graduate qualifications. This analysis assumes that the "professional" education level indicates some type of professional-level certification. Though the apprentice level appears to counter this trend, the sample size is very small (n = 13) and can therefore not necessarily meaningful.
-
-
-
-#### 3.3.4 Performance by Employment Status
-
-The major inference apparent in Figure 5 d) is that retired individuals appear to be significantly more likely to get farther in the course, achieving a median of completion of step 3.2. This finding correlates almost exactly with Figure 5 c) (ref. 3.3.3), in that the median step completion for people of retirement age (> 65) was approximately step 3.2. 
-
-
-#### 3.3.5 Performance by Country
-
-There are no stand-out conclusions to be drawn by Figure 6. No single country appears to perform significantly better than others. However it is notable that of the top 20 countries by step completion, 11 are English speaking or have large English-speaking populations. 
-
-```{r pred-country, fig.cap = "Average Step Completion by Country (Top 20)", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide'}
-####Predictor Country
-# ggplot(data = df_step_perf_ct, mapping = aes(x = reorder(detected_country, step), y = step)) + geom_col(fill=I("#0066CC"), col=I("white"), alpha=I(0.8)) +
-#         theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + 
-#         labs(x = "Country", y = "Step", title = "")
-```
-
-
-
-
-### 3.4 Identify Factors Contributing to Paid Upgrades
-
-The working dataset contains 37,296 observations, however only 289 of these individuals paid for the course certification. Unfortunately the subset of these observations for which full demographic data were available is insufficient for statistical inference (n = 13). Therefore, no meaningful conclusions can be made from analysis of these data with regard to identifying predictors of purchase conversions. 
-
-The data do appear to show that conversely, certification purchases drive course completion. As demonstrated by Table 6, 81 percent of learners who paid for certification had finished the course. Of this group (n = 233), 64 percent had purchased the course prior to completion (ref. Table 7). This finding indicates that per-completion purchases are a major motivator towards course completion, in that students who have invested financially in the course are more likely to see it through to completion. 
-Of the subset of students who completed the course, then paid after completion (n = 84), 61 percent paid the day of completion, while 75 percent had paid within one week. This finding possibly reflects automated email reminders to graduates, and should be compared against platform standard practices to measure efficacy. 
-
-```{r, echo=FALSE}
-# knitr::kable(tblFun(df_enrol_paid$completed), booktabs = TRUE, caption = 'Purchases by Course Completion (n = 289)')
-# knitr::kable(tblFun(df_enrol_paid$purchased_cert_bin), booktabs = TRUE, caption = 'Purchases by Time (completed only; n = 233)')
-```
-
-
-### 3.5 Model Predictors of Course Completion
-
-Classification analysis of the the demographic predictors of course completion success was accomplished using a logistic regression model. The results of this analysis identified minimal contribution to model predictive functionality from higher education and employment status. The major predictor was age group, with gender also making a notable contribution. These findings are mostly in keeping with the findings identified in section 3.3. With the exception of 'retired' employment status and a marginal trend upwards for step performance compared to educational achievement, the major correlations identified were indeed gender and age group. 
-
-A summary of the reduced model is provided below, after removing education and employment status. The model test error was computed using k=10 folds cross validation. The resulting calculated error is 13 percent. However, as demonstrated by the confusion matrix, the model is rather pessimistic. For all 382 test observations, the model predicted probabilities for zero course completions. This result is unlikely of course, as 13 percent of observations in the sample had completed the course. Further evaluation using additional data could confirm the viability of the model.
-
-
-```{r, echo=TRUE}
-# # Display summary of model parameters
-# summary(lr_fit_final)
-# # Model Confusion Matrix
-# conf_matrix
-# # Model Test Error
-# lr_test_error
-# # Cross Validated Test Error (k = 10)
-# cross_val_test_error
-```
 
 
 

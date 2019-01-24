@@ -97,74 +97,79 @@ task_runtime_means = task_runtimes %>%
 # Execution Time
 p12 = plot_hist(task_runtimes,'duration','Render',lab = 'Execution Time (s)',n=0.5,c=1)
 p13 = plot_hist(task_runtimes,'duration','Tiling',lab = 'Execution Time (s)',n=0.005,c=1)
+#minimal data
+plot_hist(task_runtimes,'duration','Uploading',lab = 'Execution Time (s)',colour='#0066CC',d=0.9,f=0.95,h=0.85)
+plot_hist(task_runtimes,'duration','Saving Config',lab = 'Execution Time (s)',colour='#0066CC',n=0.0001,rnd=4,d=0.95,f=0.9,h=0.85)
+# Plot Render & Tiling
 cache('p12')
 cache('p13')
 grid.arrange(p12, p13, ncol=1)
 
-p14 = plot_hist(task_runtimes,'duration','Uploading',lab = 'Execution Time (s)',colour='#0066CC',d=0.9,f=0.95,h=0.85)
-p15 = plot_hist(task_runtimes,'duration','Saving Config',lab = 'Execution Time (s)',colour='#0066CC',n=0.0001,rnd=4,d=0.95,f=0.9,h=0.85)
-cache('p14')
-cache('p15')
-grid.arrange(p14, p15, ncol=1)
+
 
 
 # Power Consumption
-p16 = plot_hist(gpu_task,'watt','Render',lab = 'Power Consumption (W)', n=0.5,c=1,h=0.9)
-p17 = plot_hist(gpu_task,'watt','Tiling',lab = 'Power Consumption (W)', n=0.2,c=0,e=1,h=0.9)
-cache('p16')
-cache('p17')
-grid.arrange(p16, p17, ncol=1)
-
-p18 = plot_hist(gpu_task,'watt','Uploading',lab = 'Power Consumption (W)', n=0.2,c=1,h=0.9)
-p19 = plot_hist(gpu_task,'watt','Saving Config',lab = 'Power Consumption (W)', n=0.2,c=0,e=1,h=0.9)
-cache('p18')
-cache('p19')
-grid.arrange(p18, p19, ncol=1)
-
-
+p14 = plot_hist(gpu_task,'watt','Render',lab = 'Power Consumption (W)', n=0.7,c=1,h=0.9)
+#minimal data
+plot_hist(gpu_task,'watt','Tiling',lab = 'Power Consumption (W)', n=0.2,c=0,e=1,h=0.9)
+plot_hist(gpu_task,'watt','Uploading',lab = 'Power Consumption (W)', n=0.2,c=1,h=0.9)
+plot_hist(gpu_task,'watt','Saving Config',lab = 'Power Consumption (W)', n=0.2,c=0,e=1,h=0.9)
 
 # Temperature
-p20 = plot_hist(gpu_task,'temp','Render',lab = 'Temperature (C)', n=0.2,c=0,e=1)
-p21 = plot_hist(gpu_task,'temp','Tiling',lab = 'Temperature (C)', n=0.2,c=0,e=1)
-cache('p20')
-cache('p21')
-grid.arrange(p20, p21, ncol=1)
-
+p15 = plot_hist(gpu_task,'temp','Render',lab = 'Temperature (C)', n=0.2,c=0,e=1,h=0.9)
 #minimal data
+plot_hist(gpu_task,'temp','Tiling',lab = 'Temperature (C)', n=0.2,c=0,e=1)
 plot_hist(gpu_task,'temp','Uploading',lab = 'Temperature (C)', n=0.1,c=0,e=1)
 plot_hist(gpu_task,'temp','Saving Config',lab = 'Temperature (C)', n=0.1,c=1,e=0)
 
 # CPU
-p22 = plot_hist(gpu_task,'cpu','Render',lab = 'GPU Usage (%)', n=0.4,c=1,e=0,h=0.9)
+p16 = plot_hist(gpu_task,'cpu','Render',lab = 'GPU Usage (%)', n=0.4,c=1,e=0,h=0.9)
 #minimal data
 plot_hist(gpu_task,'cpu','Tiling',lab = 'GPU Usage (%)', n=0.005,c=0,e=1)
 plot_hist(gpu_task,'cpu','Uploading',lab = 'GPU Usage (%)', n=0.1,c=0,e=1)
 plot_hist(gpu_task,'cpu','Saving Config',lab = 'GPU Usage (%)', n=0.1,c=0,e=1)
 
 # Memory
-p23 = plot_hist(gpu_task,'mem','Render',lab = 'Memory Usage (%)', n=0.3,c=1,e=0,h=0.9)
+p17 = plot_hist(gpu_task,'mem','Render',lab = 'Memory Usage (%)', n=0.3,c=1,e=0,h=0.9)
 #minimal data
 plot_hist(gpu_task,'mem','Tiling',lab = 'Memory Usage (%)', n=0.005,c=0,e=1)
 plot_hist(gpu_task,'mem','Uploading',lab = 'Memory Usage (%)', n=0.1,c=0,e=1)
 plot_hist(gpu_task,'mem','Saving Config',lab = 'Memory Usage (%)', n=0.1,c=0,e=1)
-cache('p22')
-cache('p23')
-grid.arrange(p20, p21, p22, p23, ncol=2)
+
+# Plot render for GPU metrics
+cache('p14')
+cache('p15')
+cache('p16')
+cache('p17')
+grid.arrange(p14, p15, ncol=1)
+grid.arrange(p16, p17, ncol=1)
 
 
 
 
-heatmap(p24)
 
-# Test for normality
-x = task_runtimes %>%
-        filter(eventName == 'Tiling')
 
-y = gpu_task %>%
+# QQ Test for normality on GPU perfmormance vars (render only)
+# Get execution time vector
+qq = task_runtimes %>%
         filter(eventName == 'Render')
+# plot
+p18 = ggplot(qq, aes(sample = duration)) + stat_qq() + stat_qq_line(color='#0066CC')
 
-qqnorm(y$mem, pch = 1, frame = FALSE)
-qqline(y$mem, col = "steelblue", lwd = 2)
+# Get GPU metrics
+qq2 = gpu_task %>%
+        filter(eventName == 'Render')
+# plot
+p19 = ggplot(qq2, aes(sample = watt)) + stat_qq() + stat_qq_line(color='#0066CC') + labs(title = 'Power Consumption (W)')
+p20 = ggplot(qq2, aes(sample = temp)) + stat_qq() + stat_qq_line(color='#0066CC') + labs(title = 'Temperature (C)')
+p21 = ggplot(qq2, aes(sample = cpu)) + stat_qq() + stat_qq_line(color='#0066CC') + labs(title = 'GPU Usage (%)')
+p22 = ggplot(qq2, aes(sample = mem)) + stat_qq() + stat_qq_line(color='#0066CC') + labs(title = 'Memory Usage (%)')
+cache('p19')
+cache('p20')
+cache('p21')
+cache('p22')
+grid.arrange(p19, p20, p21, p22, ncol=2)
+
 
 
 ##### Compare resource usage by tile (heatmaps)
@@ -276,8 +281,6 @@ gpu_plot_agg = gpu_task %>%
         filter(eventName != 'TotalRender') %>%
         group_by('Event' = eventName) %>%
         summarise('Power (W)' = round(mean(watt),2), 'Temperature (s)' = round(mean(temp),2), 'GPU Usage (%)' = round(mean(cpu),3), 'Memory Usage (%)' = round(mean(mem),3), n = n())
-
-
 
 
 gpu_render = gpu_task %>%
