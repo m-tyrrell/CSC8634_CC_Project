@@ -8,6 +8,9 @@ gpu$timestamp = ymd_hms(gpu$timestamp)
 gpu$hostname = as.character(gpu$hostname)
 gpu$gpuUUID = NULL
 
+# Check for NAs
+sum(is.na(gpu[,]))
+
 cache("gpu")
 
 # Load each csv data file, correct timestamp using lubridate, convert factors
@@ -26,6 +29,9 @@ app_task = app_check %>%
         mutate(jobId = NULL) %>%
         # Arrange by taskId and timestamp !! important for later processing !!
         arrange(taskId, timestamp)
+
+# Check for NAs
+sum(is.na(app_task[,]))
 
 cache('app_task')
 

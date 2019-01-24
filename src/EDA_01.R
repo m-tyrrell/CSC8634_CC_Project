@@ -1,13 +1,27 @@
 ##### DATA Description
 
-# GPU EDA - looks like GPU dataset is an automated output, taking readings at a specified time for all GPUs.
+# Check unique values for particular variables
+length(unique(app_task$hostname))
+length(unique(app_task$taskid))
+length(unique(app_task$x))
+length(unique(app_task$y))
+length(unique(app_task$level))
+length(unique(gpu$hostname))
+length(unique(gpu$gpuSerial))
 
 # HOSTNAMES: 1024
 # TaskID: 65793 (level 12 @ 256*256; level 8 @ 16*16; level 4 @ 1*1)
 # JobID: 3 (one for each level)
-
 # GpuSerial: 1024
 # GPuUUID: 1024
+
+# Examine extra 247 observations in app_task (should = 65793x10)
+hostname_task_n = app_task %>%
+        group_by(hostname, taskId) %>%
+        summarise(n = n())
+
+hostname_task_n %>%
+        filter(n == 20)
 
 # Task scheduling (durations): Total Render = Saving Config + Render + Uploading (Does not include Tiling!)
 f = 0
@@ -16,23 +30,54 @@ sum(task_runtimes[(f+1):(f+2),4]) + sum(task_runtimes[(f+5),4]) - sum(task_runti
 
 ##### EDA
 
-# Looking at individual GPU performance
+# Looking at individual GPU performance - approximately 1500 observations per GPU in gpu dataset
+
+# Create index column with accessible numbers for each gpu serial number
 gpu_id = data.frame(gpuSerial = sort(unique(gpu$gpuSerial)), id =  1:1024)
+# Create a copy of gpu dataset and insert gpu index vector
 gpu_r = gpu
 gpu_r = left_join(gpu_r, gpu_id)
 
-t = gpu %>%
-        filter(gpuSerial == 323217055910)
-
+# Filter gpu_r dataset by unique gpu index number for plotting and first 10 minutes
 gpu_t = gpu_r %>%
-        filter(id == 500)
+        filter(id == 500) %>%
+        arrange(timestamp) %>%
+        filter(timestamp < min(timestamp)+600)
 
-ggplot(gpu_t, aes(timestamp, powerDrawWatt)) + geom_line() 
-ggplot(gpu_t, aes(timestamp, gpuTempC)) + geom_line() 
-ggplot(gpu_t, aes(timestamp, gpuUtilPerc)) + geom_line() 
-ggplot(gpu_t, aes(timestamp, gpuMemUtilPerc)) + geom_line() 
+# Plot each metric in the subsetted gpu_r dataset
+p1 = ggplot(gpu_t, aes(timestamp, powerDrawWatt)) + geom_line(color='#0066CC') + labs( x = 'timestamp (s)', y = 'Power (W)')
+p2 = ggplot(gpu_t, aes(timestamp, gpuTempC)) + geom_line(color='#0066CC') + labs(x = 'timestamp (s)', y = 'Temperature (C)')
+p3 = ggplot(gpu_t, aes(timestamp, gpuUtilPerc)) + geom_line(color='#0066CC') + labs(x = 'timestamp (s)', y = 'GPU Usage (%)')
+p4 = ggplot(gpu_t, aes(timestamp, gpuMemUtilPerc)) + geom_line(color='#0066CC') + labs(x = 'timestamp (s)', y = 'Memory Usage (%)')
+# Plot grid of 4
+grid.arrange(p1, p2, p3, p4, ncol=2)
 
+# Actual s/n of gpu used for plot
+as.character(gpu_t$gpuSerial[1])
  
+
+# Q2 interplay between GPU Performance metrics
+q2 = gpu %>%
+        select(4:7)
+
+# Take sample of q2 index
+x = sample(1:dim(q2)[1],1000)
+# Slice q2 by sample
+q2_samp = q2[x,]
+
+p5 = ggplot(q2_samp, aes(powerDrawWatt, gpuTempC)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Power (W)', y = 'Temperature (C)')
+p6 = ggplot(q2_samp, aes(gpuUtilPerc, gpuTempC)) + geom_point(size=0.25) + stat_smooth()+ labs( x = 'GPU Usage (%)', y = 'Temperature (C)')
+p7 = ggplot(q2_samp, aes(gpuUtilPerc, powerDrawWatt)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'GPU Usage (%)', y = 'Power (W)')
+p8 = ggplot(q2_samp, aes(gpuUtilPerc, gpuMemUtilPerc)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'GPU Usage (%)', y = 'Memory Usage (%)')
+p9 = ggplot(q2_samp, aes(powerDrawWatt, gpuMemUtilPerc)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Power (W)', y = 'Memory Usage (%)')
+p10 = ggplot(q2_samp, aes(gpuTempC, gpuMemUtilPerc)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Temperature (C)', y = 'Memory Usage (%)')
+
+# Plot grid of 4
+p11 = grid.arrange(p5, p6, p7, p8, p9, p10, ncol=3)
+ggsave(filename="graphs/p11.png", plot=p11)
+
+
+
 ##### QUESTIONS
 
 # Q1 Which tasks dominate runtimes?
@@ -42,17 +87,7 @@ task_runtime_means = task_runtimes %>%
         summarise(mean_dur = mean(duration), n = n())
 
 
-# Q2 interplay between GPU Temp and Performance
 
-q2 = gpu %>%
-        select(4:7)
-
-# Take sample of q2 index
-x = sample(1:dim(q2)[1],2000)
-# Slice q2 by sample
-q2_samp = q2[x,]
-
-pairs(q2_samp)
 
 
 
