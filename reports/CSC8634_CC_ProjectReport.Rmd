@@ -125,8 +125,7 @@ The analysis made heavy use of the Dplyr package to transform and filter **app_t
 
 As detailed in section 2.2, the data show 1024 unique VMs, each with an attached GPU. These 1024 GPUs were used to render 65,793 unique tiling jobs identified by a unique task number. 
 
-The performance data over 10 minutes for a sample GPU (S/N: 323617042631) is displayed in Figure 1. The cycles for each tiling job can be clearly seen in the plot for each metric. Each tiling job took appears to take approximately 40 seconds.
-
+The performance data over the first 10 minutes for a sample GPU (S/N: 323617042631) are displayed in Figure 1. The cycles for each tiling job can be clearly seen in the plot for each metric. Each tiling job took appears to take approximately 40 seconds. GPU utlisation percentage appears relatively uniform for each tiling job at approximately 90%, whereas there is more variation on the other metrics. This is possibly a result of a percentage usage software limit on the GPU. Unsurprisingly, the temperature builds up from a cold start over successive tiling jobs. 
 
 ```{r eda_01, fig.cap = "Sample GPU Performance Metrics over Time", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
 # Create index column with accessible numbers for each gpu serial number
@@ -150,10 +149,7 @@ p4 = ggplot(gpu_t, aes(timestamp, gpuMemUtilPerc)) + geom_line(color='#0066CC') 
 grid.arrange(p1, p2, p3, p4, ncol=2)
 ```
 
-
-The 
-
-
+Figure 2 displays scatter plots of the GPU performance metrics correlations. As the GPU dataset is extremely large at 1.5 million observations, a random sample of 10,000 was selected for the plots. As demonstrated, there is a postive correlation between all of the metrics. However, there is also significant variation. This finding matches the observations taken from Figure 1. The positive correlation is to be expected, as the increased workload on the GPU in the form of GPU utilisation percentage will naturally require associated memory for the tiling job, and the demands of this utilisation on the hardware components will result in increased power consumption and rising temperature. 
 
 ```{r eda_02, fig.cap = "GPU Performance Metrics Correlation", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
 # Q2 interplay between GPU Performance metrics
@@ -176,21 +172,34 @@ p10 = ggplot(q2_samp, aes(gpuTempC, gpuMemUtilPerc)) + geom_point(size=0.25) + s
 grid.arrange(p5, p6, p7, p8, p9, p10, ncol=3)
 ```
 
+Table 1 displays the mean of each GPU performance metric by each event. The rendering task is easily identifiable as the most energy-intense phase of the tiling job, with power consumption more than double that of the second highest, tiling. There is much less variation in relative temperatures, though rendering is still noteably higher in mean temperature than the other phases. 
 
+```{r eda_03, echo=FALSE, cache=TRUE}
+# Table showing means of all gpu metrics for each task mean by event
+gpu_plot_agg = gpu_task %>%
+        filter(eventName != 'TotalRender') %>%
+        group_by('Event' = eventName) %>%
+        summarise('Power (W)' = round(mean(watt),2), 'Temperature (s)' = round(mean(temp),2), 'GPU Usage (%)' = round(mean(cpu),3), 'Memory Usage (%)' = round(mean(mem),3), n = n())
 
-The learners are highly educated overall, with almost 66 percent reporting a minimum of a bachelor degree. 
+knitr::kable(gpu_plot_agg, booktabs = TRUE, caption = 'Mean GPU Performance by Event (all Levels)')
 
-```{r eda_03, echo=FALSE}
+```
+
+There are noteable missing data in Table 1 for the Saving Config, Uploading and Tiling phases over GPU and memory utilisation. The dataset used to compute the table was taken from **gpu_task**. This dataset is a join of **gpu** with **app_task**, where each gpu observation is matched by the VM hostname and timestamp for each event. Despite the high logging resolution of the operation (each GPU logged performance metrics approximately every 2 seconds), on average these events occur over very short intervals (less than 1 second). As such, they were statistically less likely to be 'sampled', and consequently have a much smaller sample size relative to the rendering phase. 
+
+Table 2 provides quantified insight into this effect by detailing the mean runtime durations for each event. The phases in question display very short average durations. This effect is particularily exemplified in the case of Saving Config. With an average interval of 2ms, it only appears in 108 of the GPU observations.
+
+The presence of power and temperature data for the underrepresented phases in the absence of corresponding GPU and memory data remains questionable. It is likely the temperature metric follows a heat loading dynamic, taking time to cool off after each rendering phase. The negative corrollary of this effect was already observed (ref. Figure 1). The power metric can assumed to be exhibiting baseline consumption. With regard to GPU and memory, the phases in question can be assumed to put only relatively low strain on the hardware resources. Therefore it is not surprising to see zero utilisation on these metrics, as any small percent utilisation caught by the sampling process would be effectively zeroed out by the mean operation. 
+
+```{r eda_03x, echo=FALSE, cache=TRUE}
 # Q1 Which tasks dominate runtimes?
 task_runtime_means = task_runtimes %>%
         # Aggregate by event taking mean of all observations for each event
-        group_by(eventName) %>%
-        summarise('mean duration (s)' = mean(duration), n = n()) %>%
-        rename('Event Name' = eventName)
-# Round runtime        
-task_runtime_means$`mean duration (s)` = round(task_runtime_means$`mean duration (s)`,2)
+        filter(eventName != 'TotalRender') %>%
+        group_by('Event' = eventName) %>%
+        summarise('Duration (s)' = round(mean(duration),3), n = n())
 
-knitr::kable(task_runtime_means, booktabs = TRUE, caption = 'Task Runtime Mean Durations (Level 12)')
+knitr::kable(task_runtime_means, booktabs = TRUE, caption = 'Mean Runtime Durations by Event (Level 12 only)')
 ```
 
 
@@ -204,33 +213,28 @@ grid.arrange(p12, p13, ncol=1)
 
 
 
-```{r eda_05, fig.cap = "Distribution by Execution Time: Uploading \\& Save Config", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
-##### Execution Time Plot - histograms showing distribution of execution times for each event type (Render & Tiling)
-grid.arrange(p14, p15, ncol=1)
-```
 
-The geographical heat map presented in Figure 1 provides a wider view of the student base by nationality. The countries highlighted on the map represent the top 50 countries by number of students. Although 200 countries in total are represented in the learner nationality dataset, the top 50 countries account for 90 percent of the total. 
+
 ```{r eda_06, fig.cap = "Distribution by Power Consumption: Render \\& Tiling", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
 grid.arrange(p16, p17, ncol=1)
 ```
 
-```{r eda_07, fig.cap = "Distribution by Power Consumption: Uploading \\& Save Config", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
-grid.arrange(p18, p19, ncol=1)
-```
+
 
 
 ```{r eda_08, fig.cap = "Distribution by Temperature: Render \\& Tiling", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
 grid.arrange(p20, p21, ncol=1)
 ```
 
-```{r eda_09, fig.cap = "Distribution by GPU \\& Memory: Render", fig.pos = "H", out.width='100%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
+```{r eda_09, fig.cap = "Distribution by GPU \\& Memory: Render", fig.pos = "H", out.width='100%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=FALSE}
 grid.arrange(p22, p23, ncol=1)
 grid.arrange(p20,p21,p22, p23, ncol=2)
 ```
 
 
-```{r}
-knitr::include_graphics(path = "../graphs/p24.pdf")
+```{r eda_10, fig.cap = "Distribution by GPU \\& Memory: Render", fig.pos = "H", out.width='100%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
+# knitr::include_graphics(path = "../graphs/p24.pdf")
+grid.arrange(i1, i2, i3, i9, i7, i5, ncol = 3)
 ```
 
 
@@ -253,7 +257,7 @@ At registration, the course is estimated to take three weeks to complete at an i
 
 It is interesting to note the bi-modal nature of the distribution, with approximately 15 percent of students completing the course around the 125 day mark. This may be the result of auto-scheduled email prompts or other such communication.
 
-```{r eda_10, fig.cap = "Distribution by CPU \\& Memory: Render", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide'}
+```{r eda_11, fig.cap = "Distribution by CPU \\& Memory: Render", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide'}
 # ##### Completion Data (n = 2154)
 
 ```

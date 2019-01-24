@@ -17,6 +17,10 @@ cache('task_runtimes')
 # !!!! Do not run unless you have alot of time - takes around 3 hours on Core i5!!!
 
 # Arrange datasets in preparation for loop function
+# This ensure the loop below operates appropriately - i.e. under each taskID the events are sorted
+# by name, then timestamp (eg. taskID#1: Render Start, Render Stop, Tiling Start, Tiling Stop etc)
+# The loop uses an i, i+1 method to identify each event period within which to calculate the mean 
+# of the gpu metrics, so very important to get this right!!
 gpu_perf = gpu %>%
         arrange(hostname, timestamp)
 
