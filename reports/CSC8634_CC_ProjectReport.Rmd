@@ -3,19 +3,17 @@ title: "Analysis of Terascope Benchmarking Data"
 author: "Mark R. Tyrrell"
 date: "23/01/2019"
 output:
-  pdf_document: default
-     
-
+  pdf_document: null
   html_document:
     df_print: paged
-header-includes: 
+header-includes:
 - \usepackage{graphicx}
 - \usepackage{float}
 ---
 
 ```{r setup, echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir= normalizePath('~/Desktop/DS_Projects/CSC8634_CC_Project'))
+knitr::opts_knit$set(root.dir= normalizePath('..'))
 knitr::opts_chunk$set(fig.pos = 'H')
 # knitr::kable()
 ```
@@ -28,11 +26,13 @@ library(ProjectTemplate);load.project()
 ```
 
 
+
+
 ```{r, echo=FALSE}
 
 ```
 
-## Introduction
+## 1. Introduction
 
  Visualization methods
 panoramic images show potential for visualizing multiscale urban data. accessible route to supercomputer visualizations on many low cost devices.
@@ -41,7 +41,7 @@ deployed 14 PFlop cloud supercomputer, larger than any GPU HPC system in UK. cos
 
 
 
-Background
+## 2. Background
 
 Terapixel images offer an intuitive, accessible way to present information sets to stakeholders, allowing viewers to interactively browse big data across multiple scales. The challenge we addressed here is how to deliver the supercomputer scale resources needed to compute a realistic terapixel visualization of the city of Newcastle upon Tyne and its environmental data as captured by the Newcastle Urban Observatory.
 
@@ -62,19 +62,17 @@ What can we learn about the efficiency of the task scheduling process?
 A project may focus entirely on the EDA process, or you may also wish to develop a data product to allow interactive exploration of the data. For example, you could develop a Shiny dashboard to display the results of your analysis into render performance and system operation, displaying timelines of execution based on the application checkpoint data.
 
 
-## 1. Summary of business understanding: background, objectives, and success criteria
 
 
 
-
-## 2. Methodology
+## 3. Methodology
 Data analysis was conducted using the R programming language and the R Studio IDE, with the report composed in Rmarkdown. The **ProjectTemplate** library was used to organise the project and ensure reproducability. Version control was managed using git and Github. 
 
 An archived folder is available containing the original Rmarkdown .rmd file and git log. The folder is structured for standard data mining projects, including subfolders for data, cache, munge and source files. As the data analysis involves operations which require extended processing time, key objects have been cached as .Rdata files. The objects are called along the progression of the script (and Rmarkdown report), while the original code is included in the munge folder. Detailed instructions for reproducing the analysis are included in the main README file.
 
 The original csv data files are too large for Github at 300+ MB. Therefore they are not included in the archived project folder. A download link can be found in the README file. 
 
-### 2.1 Data Understanding
+### 3.1 Data Understanding
 
 The data made available for this analysis consists of 3 tabular data files in comma-separated value (.csv) format covering multiple aspects of the terapixel rendering process. The data files are detailed below.
 
@@ -94,7 +92,7 @@ This file contains 660,400 observations over 6 variables detailing application c
 5. **jobId** ID of the Azure batch job (Total: 3 one for each level 4, 8 and 12)
 6. **taskId** ID of the Azure batch task (Total: 65793 level 4 1x1; level 8 16x16; level 12 256x256)
 
-#### 2.1.2 GPU (gpu.csv 208.7MB)
+#### 3.1.2 GPU (gpu.csv 208.7MB)
 This file contains 1,543,681 observations over 8 variables detailing metrics that were output regarding the status of the GPU on the virtual machine.
 
 1. **timestamp**   Timestamp of observation entry
@@ -106,7 +104,7 @@ This file contains 1,543,681 observations over 8 variables detailing metrics tha
 7. **gpuUtilPerc** Percent utilisation of the GPU Core(s)
 8. **gpuMemUtilPerc** Percent utilisation of the GPU memory
 
-#### 2.1.3 Task X Y (task-x-y.csv 6.2MB)
+#### 3.1.3 Task X Y (task-x-y.csv 6.2MB)
 This file contains 65,793 observations over 5 variables detailing the tile x,y co-ordinates of which part the image was being rendered for each task.
 
 1. **jobId** ID of the Azure batch job (Total: 3 one for each level 4, 8 and 12)
@@ -116,21 +114,21 @@ This file contains 65,793 observations over 5 variables detailing the tile x,y c
 5. **level** The visualisation created is a zoomable "google maps style" map. In total we create 12 levels. Level 1 is zoomed right out and level 12 is zoomed right in. You will only see levels 4, 8 and 12 in the data as the intermediate level are derived in the tiling process.
 
 
-### 2.2 Data Preparation
+### 3.2 Data Preparation
 
 The csv files were read into R and reviewed. Data types were changed as required (eg. timestamps, factors to char etc). In the case of the GPU dataset, the extraneous column **gpuUUID** was dropped, as it was redundant with **gpuSerial** as a unique identifier. The Task X Y dataset was fully merged into the Application Checkpoint dataset, as it contained only 3 unique columns. The resulting object **app_task** was cached along with the **gpu** object for the GPU dataset, after checking for NAs. These cached objects form the basis of the analysis.
 
 The analysis made heavy use of the Dplyr package to transform and filter **app_task** and **gpu**. Multiple analyses were based on transformed datasets that required extensive processing time. These datasets were cached as objects, with the original code included in the munge folder. This function was particularly exemplified in the form of the **gpu_task** dataset, which was the output of the computation of mean resource usage for each event under each of the 65793 level 4 tasks in the **app_task** dataset. This computation took three hours on a Corei5 system.
 
 
-## 3 Exploratory Data Analysis
+## 4 Exploratory Data Analysis
 
 As detailed in section 2.2, the data show 1024 unique VMs, each with an attached GPU. These 1024 GPUs were used to render 65,793 unique tiling jobs identified by a unique task number. 
 
 The performance data over 10 minutes for a sample GPU (S/N: 323617042631) is displayed in Figure 1. The cycles for each tiling job can be clearly seen in the plot for each metric. Each tiling job took appears to take approximately 40 seconds.
 
 
-```{r eda_01, fig.cap = "Typical GPU Performance Metrics over Time", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide'}
+```{r eda_01, fig.cap = "Sample GPU Performance Metrics over Time", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
 # Create index column with accessible numbers for each gpu serial number
 gpu_id = data.frame(gpuSerial = sort(unique(gpu$gpuSerial)), id =  1:1024)
 # Create a copy of gpu dataset and insert gpu index vector
@@ -157,7 +155,7 @@ The
 
 
 
-```{r eda_02, fig.cap = "GPU Performance Metrics Correlation", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide'}
+```{r eda_02, fig.cap = "GPU Performance Metrics Correlation", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
 # Q2 interplay between GPU Performance metrics
 q2 = gpu %>%
         select(4:7)
@@ -179,37 +177,63 @@ grid.arrange(p5, p6, p7, p8, p9, p10, ncol=3)
 ```
 
 
-#### 3.1.3 Education
 
 The learners are highly educated overall, with almost 66 percent reporting a minimum of a bachelor degree. 
 
-```{r, echo=FALSE}
+```{r eda_03, echo=FALSE}
+# Q1 Which tasks dominate runtimes?
+task_runtime_means = task_runtimes %>%
+        # Aggregate by event taking mean of all observations for each event
+        group_by(eventName) %>%
+        summarise('mean duration (s)' = mean(duration), n = n()) %>%
+        rename('Event Name' = eventName)
+# Round runtime        
+task_runtime_means$`mean duration (s)` = round(task_runtime_means$`mean duration (s)`,2)
 
+knitr::kable(task_runtime_means, booktabs = TRUE, caption = 'Task Runtime Mean Durations (Level 12)')
 ```
 
 
-#### 3.1.4 Employment Status
 
-A third (34%) of the respondents reported working full time, with another 36 percent reporting not being currently employed (eg. retired, not_working).
 
-```{r, echo=FALSE}
-
+```{r eda_04, fig.cap = "Distribution by Execution Time: Render \\& Tiling", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
+##### Execution Time Plot - histograms showing distribution of execution times for each event type (Render & Tiling)
+grid.arrange(p12, p13, ncol=1)
 ```
 
 
-#### 3.1.5 Nationality
 
-The table below shows the top 10 student nationalities by number of students. As Future Learn is a British initiative, with the majority of partner Universities based in the United Kingdom, it's not surprising that almost one third (32%) or learners accessed the platform from inside the UK. Fully seven of the countries in the top 10 are English-speaking or have large English-speaking populations. These countries make up 59 percent of the overall student base.
 
-```{r, echo=FALSE}
-
+```{r eda_05, fig.cap = "Distribution by Execution Time: Uploading \\& Save Config", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
+##### Execution Time Plot - histograms showing distribution of execution times for each event type (Render & Tiling)
+grid.arrange(p14, p15, ncol=1)
 ```
 
 The geographical heat map presented in Figure 1 provides a wider view of the student base by nationality. The countries highlighted on the map represent the top 50 countries by number of students. Although 200 countries in total are represented in the learner nationality dataset, the top 50 countries account for 90 percent of the total. 
-```{r countries, fig.cap = "Top 50 Countries by Number of Learners", fig.pos = "H", out.width='100%', fig.asp=0.75, fig.align='center', echo=FALSE, , message=FALSE, warning=FALSE, results='hide'}
-#mapping by shade
-# mapCountryData(map_country, nameColumnToPlot = "Count", catMethod='logFixedWidth', colourPalette = "heat", oceanCol='lightblue', missingCountryCol='white', aspect = "variable", mapTitle='')
+```{r eda_06, fig.cap = "Distribution by Power Consumption: Render \\& Tiling", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
+grid.arrange(p16, p17, ncol=1)
 ```
+
+```{r eda_07, fig.cap = "Distribution by Power Consumption: Uploading \\& Save Config", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
+grid.arrange(p18, p19, ncol=1)
+```
+
+
+```{r eda_08, fig.cap = "Distribution by Temperature: Render \\& Tiling", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
+grid.arrange(p20, p21, ncol=1)
+```
+
+```{r eda_09, fig.cap = "Distribution by GPU \\& Memory: Render", fig.pos = "H", out.width='100%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
+grid.arrange(p22, p23, ncol=1)
+grid.arrange(p20,p21,p22, p23, ncol=2)
+```
+
+
+```{r}
+knitr::include_graphics(path = "../graphs/p24.pdf")
+```
+
+
 
 
 
@@ -229,15 +253,12 @@ At registration, the course is estimated to take three weeks to complete at an i
 
 It is interesting to note the bi-modal nature of the distribution, with approximately 15 percent of students completing the course around the 125 day mark. This may be the result of auto-scheduled email prompts or other such communication.
 
-```{r completion, fig.cap = "Successful Course Completion Duration (days)", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide'}
+```{r eda_10, fig.cap = "Distribution by CPU \\& Memory: Render", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide'}
 # ##### Completion Data (n = 2154)
-# df_enrol_days_cp = filter(df_enrol, !is.na(days_to_completion))
-# 
-# #Plot Course Completion Duration frequency
-# ggplot(df_enrol_days_cp, aes(days_to_completion)) + geom_histogram(binwidth = 10, fill=I("#0066CC"), col=I("white"), alpha=I(0.8)) + 
-#         labs(x = "Days", y = "Count") + theme(text = element_text(size=8)) +
-#         scale_x_continuous(breaks = round(seq(min(df_enrol_days_cp$days_to_completion), max(df_enrol_days_cp$days_to_completion), by = 25),1))
+
 ```
+
+
 
 
 #### 3.2.2 Course Step Duration

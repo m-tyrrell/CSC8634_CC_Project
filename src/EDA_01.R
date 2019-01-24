@@ -72,8 +72,8 @@ p8 = ggplot(q2_samp, aes(gpuUtilPerc, gpuMemUtilPerc)) + geom_point(size=0.25) +
 p9 = ggplot(q2_samp, aes(powerDrawWatt, gpuMemUtilPerc)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Power (W)', y = 'Memory Usage (%)')
 p10 = ggplot(q2_samp, aes(gpuTempC, gpuMemUtilPerc)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Temperature (C)', y = 'Memory Usage (%)')
 
-# Plot grid of 4
-p11 = grid.arrange(p5, p6, p7, p8, p9, p10, ncol=3)
+# Plot grid of 6
+grid.arrange(p5, p6, p7, p8, p9, p10, ncol=3)
 ggsave(filename="graphs/p11.png", plot=p11)
 
 
@@ -84,7 +84,10 @@ ggsave(filename="graphs/p11.png", plot=p11)
 task_runtime_means = task_runtimes %>%
         # Aggregate by event taking mean of all observations for each event
         group_by(eventName) %>%
-        summarise(mean_dur = mean(duration), n = n())
+        summarise('mean duration (s)' = mean(duration), n = n()) %>%
+        rename('Event Name' = eventName)
+# Round runtime      
+task_runtime_means$`mean duration (s)` = round(task_runtime_means$`mean duration (s)`,2)
 
 
 
@@ -95,56 +98,128 @@ task_runtime_means = task_runtimes %>%
 ##### Execution Time Plot - histograms showing distribution of execution times for each event type (Render & Tiling)
 
 # Execution Time
-plot_hist(task_runtimes,'duration','Render',lab = 'Execution Time (s)',n=0.5,c=1)
-plot_hist(task_runtimes,'duration','Tiling',lab = 'Execution Time (s)',n=0.005,c=1)
-plot_hist(task_runtimes,'duration','Uploading',lab = 'Execution Time (s)',colour='#0066CC',d=0.9,f=0.95,h=0.85)
-plot_hist(task_runtimes,'duration','Saving Config',lab = 'Execution Time (s)',colour='#0066CC',n=0.0001,rnd=4,d=0.95,f=0.9,h=0.85)
+p12 = plot_hist(task_runtimes,'duration','Render',lab = 'Execution Time (s)',n=0.5,c=1)
+p13 = plot_hist(task_runtimes,'duration','Tiling',lab = 'Execution Time (s)',n=0.005,c=1)
+cache('p12')
+cache('p13')
+grid.arrange(p12, p13, ncol=1)
+
+p14 = plot_hist(task_runtimes,'duration','Uploading',lab = 'Execution Time (s)',colour='#0066CC',d=0.9,f=0.95,h=0.85)
+p15 = plot_hist(task_runtimes,'duration','Saving Config',lab = 'Execution Time (s)',colour='#0066CC',n=0.0001,rnd=4,d=0.95,f=0.9,h=0.85)
+cache('p14')
+cache('p15')
+grid.arrange(p14, p15, ncol=1)
+
 
 # Power Consumption
-plot_hist(gpu_task,'watt','Render',lab = 'Power Consumption (W)', n=0.5,c=1)
-plot_hist(gpu_task,'watt','Tiling',lab = 'Power Consumption (W)', n=0.2,c=0,e=1)
-plot_hist(gpu_task,'watt','Uploading',lab = 'Power Consumption (W)', n=0.2,c=1)
-plot_hist(gpu_task,'watt','Saving Config',lab = 'Power Consumption (W)', n=0.2,c=0)
+p16 = plot_hist(gpu_task,'watt','Render',lab = 'Power Consumption (W)', n=0.5,c=1,h=0.9)
+p17 = plot_hist(gpu_task,'watt','Tiling',lab = 'Power Consumption (W)', n=0.2,c=0,e=1,h=0.9)
+cache('p16')
+cache('p17')
+grid.arrange(p16, p17, ncol=1)
+
+p18 = plot_hist(gpu_task,'watt','Uploading',lab = 'Power Consumption (W)', n=0.2,c=1,h=0.9)
+p19 = plot_hist(gpu_task,'watt','Saving Config',lab = 'Power Consumption (W)', n=0.2,c=0,e=1,h=0.9)
+cache('p18')
+cache('p19')
+grid.arrange(p18, p19, ncol=1)
+
+
 
 # Temperature
-plot_hist(gpu_task,'temp','Render',lab = 'Temperature (C)', n=0.1,c=0,e=1)
-plot_hist(gpu_task,'temp','Tiling',lab = 'Temperature (C)', n=0.1,c=0,e=1)
+p20 = plot_hist(gpu_task,'temp','Render',lab = 'Temperature (C)', n=0.15,c=0,e=1)
+p21 = plot_hist(gpu_task,'temp','Tiling',lab = 'Temperature (C)', n=0.1,c=0,e=1)
+cache('p20')
+cache('p21')
+grid.arrange(p20, p21, ncol=1)
+
+#minimal data
 plot_hist(gpu_task,'temp','Uploading',lab = 'Temperature (C)', n=0.1,c=0,e=1)
 plot_hist(gpu_task,'temp','Saving Config',lab = 'Temperature (C)', n=0.1,c=1,e=0)
 
 # CPU
-plot_hist(gpu_task,'cpu','Render',lab = 'CPU (%)', n=0.2,c=1,e=0)
+p22 = plot_hist(gpu_task,'cpu','Render',lab = 'GPU Usage (%)', n=0.3,c=1,e=0,h=0.9)
 #minimal data
-plot_hist(gpu_task,'cpu','Tiling',lab = 'CPU (%)', n=0.005,c=0,e=1)
-plot_hist(gpu_task,'cpu','Uploading',lab = 'CPU (%)', n=0.1,c=0,e=1)
-plot_hist(gpu_task,'cpu','Saving Config',lab = 'CPU (%)', n=0.1,c=0,e=1)
+plot_hist(gpu_task,'cpu','Tiling',lab = 'GPU Usage (%)', n=0.005,c=0,e=1)
+plot_hist(gpu_task,'cpu','Uploading',lab = 'GPU Usage (%)', n=0.1,c=0,e=1)
+plot_hist(gpu_task,'cpu','Saving Config',lab = 'GPU Usage (%)', n=0.1,c=0,e=1)
 
 # Memory
-plot_hist(gpu_task,'mem','Render',lab = 'Memory (%)', n=0.2,c=1,e=0)
+p23 = plot_hist(gpu_task,'mem','Render',lab = 'Memory Usage (%)', n=0.2,c=1,e=0,h=0.9)
 #minimal data
-plot_hist(gpu_task,'mem','Tiling',lab = 'Memory (%)', n=0.005,c=0,e=1)
-plot_hist(gpu_task,'mem','Uploading',lab = 'Memory (%)', n=0.1,c=0,e=1)
-plot_hist(gpu_task,'mem','Saving Config',lab = 'Memory (%)', n=0.1,c=0,e=1)
+plot_hist(gpu_task,'mem','Tiling',lab = 'Memory Usage (%)', n=0.005,c=0,e=1)
+plot_hist(gpu_task,'mem','Uploading',lab = 'Memory Usage (%)', n=0.1,c=0,e=1)
+plot_hist(gpu_task,'mem','Saving Config',lab = 'Memory Usage (%)', n=0.1,c=0,e=1)
+cache('p22')
+cache('p23')
+grid.arrange(p20, p21, p22, p23, ncol=2)
 
 
-
-
-
+heatmap(p24)
 
 # Test for normality
 x = task_runtimes %>%
+        filter(eventName == 'Tiling')
+
+y = gpu_task %>%
         filter(eventName == 'Render')
 
-qqnorm(x$duration, pch = 1, frame = FALSE)
-qqline(x$duration, col = "steelblue", lwd = 2)
+qqnorm(y$mem, pch = 1, frame = FALSE)
+qqline(y$mem, col = "steelblue", lwd = 2)
 
 
 # Compare resource usage by tile (Q3b)
 # Filter and aggregate joined app_check/taskxy to display only relevant variables/tasks
+pdf('graphs/p24.pdf')
 heat_vis('Render','duration',caption='on')
+dev.off ();
+
+jpg('graphs/p25.jpg')
+heat_vis('Tiling','duration',caption='on')
+dev.off ();
+
+pdf('graphs/p26.pdf')
+heat_vis('Render','watt',caption='on')
+dev.off ();
+
+pdf('graphs/p27.pdf')
+heat_vis('Tiling','watt',caption='on')
+dev.off ();
+
+pdf('graphs/p28.pdf')
+heat_vis('Render','temp',caption='on')
+dev.off ();
+
+pdf('graphs/p29.pdf')
+heat_vis('Tiling','temp',caption='on')
+dev.off ();
+
+pdf('graphs/p30.pdf')
+heat_vis('Render','cpu',caption='on')
+dev.off ();
+
+pdf('graphs/p31.pdf')
+heat_vis('Tiling','cpu',caption='on')
+dev.off ();
+
+pdf('graphs/p32.pdf')
+heat_vis('Render','mem',caption='on')
+dev.off ();
+
+pdf('graphs/p33.pdf')
+heat_vis('Tiling','mem',caption='on')
+dev.off ();
 
 
 
+ggsave(filename = 'graphs/p23')
+
+p24 = heat_vis('Render','watt',caption='on')
+p25 = heat_vis('Render','temp',caption='on')
+p26 = heat_vis('Render','cpu',caption='on')
+p27 = heat_vis('Render','mem',caption='on')
+
+grid.arrange(p23, p24, p25, p26, ncol=2)
 
 
 # Compare performance by GPU (Q3b)

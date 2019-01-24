@@ -92,7 +92,7 @@ cache("heat_vis")
 ##### Execution Time Plot - histograms showing distribution of execution times for each event type (Render & Tiling)
 
 # Look at start/stop times for each render and fit them into gpu stats based on timestamps
-plot_hist = function(df, var_col,event,lab=var_col, n=0.1, colour = 'white', rnd=2, a=0,b=1,c=0,d=1,e=0,f=1,g=0,h=1,i=1,j=1){
+plot_hist = function(df, var_col,event,title=event,lab=var_col, n=0.1, colour = 'white', rnd=2, a=0,b=1,c=0,d=1,e=0,f=1,g=0,h=1,i=1,j=1){
         # Filter as per selected event
         x = df %>%
                 filter(eventName == event)
@@ -117,7 +117,7 @@ plot_hist = function(df, var_col,event,lab=var_col, n=0.1, colour = 'white', rnd
                 geom_vline(xintercept = max(x[[var_col]]), color = 'red', linetype = 'dotdash') +
                 annotate("text", x=max(x[[var_col]]), y=ymax*j, label= paste("Max",round(max(x[[var_col]]),rnd)), size=2.5, hjust=i) +
                 # Labels
-                labs(x = lab, y = "Frequency (n)")
+                labs(title = title, x = lab, y = "Frequency (n)")
         # length(x[[var_col]])
 }
 cache("plot_hist")
