@@ -57,20 +57,21 @@ as.character(gpu_t$gpuSerial[1])
  
 
 # Q2 interplay between GPU Performance metrics
-q2 = gpu %>%
+log_corr = gpu %>%
         select(4:7)
 
 # Take sample of q2 index
-x = sample(1:dim(q2)[1],1000)
+x = sample(1:dim(log_corr)[1],100000)
 # Slice q2 by sample
-q2_samp = q2[x,]
+log_corr_samp = log_corr[x,]
+cache('log_corr_samp')
 
-p5 = ggplot(q2_samp, aes(powerDrawWatt, gpuTempC)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Power (W)', y = 'Temperature (C)')
-p6 = ggplot(q2_samp, aes(gpuUtilPerc, gpuTempC)) + geom_point(size=0.25) + stat_smooth()+ labs( x = 'GPU Usage (%)', y = 'Temperature (C)')
-p7 = ggplot(q2_samp, aes(gpuUtilPerc, powerDrawWatt)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'GPU Usage (%)', y = 'Power (W)')
-p8 = ggplot(q2_samp, aes(gpuUtilPerc, gpuMemUtilPerc)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'GPU Usage (%)', y = 'Memory Usage (%)')
-p9 = ggplot(q2_samp, aes(powerDrawWatt, gpuMemUtilPerc)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Power (W)', y = 'Memory Usage (%)')
-p10 = ggplot(q2_samp, aes(gpuTempC, gpuMemUtilPerc)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Temperature (C)', y = 'Memory Usage (%)')
+p5 = ggplot(log_corr_samp, aes(powerDrawWatt, gpuTempC)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Power (W)', y = 'Temperature (C)')
+p6 = ggplot(log_corr_samp, aes(gpuUtilPerc, gpuTempC)) + geom_point(size=0.25) + stat_smooth()+ labs( x = 'GPU Usage (%)', y = 'Temperature (C)')
+p7 = ggplot(log_corr_samp, aes(gpuUtilPerc, powerDrawWatt)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'GPU Usage (%)', y = 'Power (W)')
+p8 = ggplot(log_corr_samp, aes(gpuUtilPerc, gpuMemUtilPerc)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'GPU Usage (%)', y = 'Memory Usage (%)')
+p9 = ggplot(log_corr_samp, aes(powerDrawWatt, gpuMemUtilPerc)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Power (W)', y = 'Memory Usage (%)')
+p10 = ggplot(log_corr_samp, aes(gpuTempC, gpuMemUtilPerc)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Temperature (C)', y = 'Memory Usage (%)')
 
 # Plot grid of 6
 p11 = grid.arrange(p5, p6, p7, p8, p9, p10, ncol=3)
@@ -184,12 +185,11 @@ ggsave('graphs/p23.png', p23, width = 6.3, height = 5.8)
 
 
 
-# Compare performance by GPU 
+##### Compare performance by GPU S/N 
 #Strip down gpu dataset to only hostnames and gpu serial
 gpu_serial = gpu %>%
         distinct(hostname, gpuSerial, .keep_all = FALSE) %>%
         arrange(gpuSerial)
-
 cache('gpu_serial')
 
 # Filter and aggregate joined app_check/taskxy to display only relevant variables/tasks
@@ -203,17 +203,34 @@ comp_gpu = task_runtimes %>%
         summarise(avg_dur = mean(duration)) %>%
         # Add index column for plotting
         mutate(index = 1:1024)
-
 cache('comp_gpu')
 
 # Plot render time by S/N
 h = median(comp_gpu$avg_dur)
-p24 = ggplot(comp_gpu) + geom_point(aes(gpuSerial, avg_dur)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') + 
+p24 = ggplot(comp_gpu) + geom_point(aes(gpuSerial, avg_dur)) + labs(x = 'GPU S/N', y = 'Mean Render Execution Time (s)') + 
         geom_hline(yintercept = h, color = 'red', linetype = 'dotdash') +
         annotate("text", x=comp_gpu$gpuSerial[1]+500000000, y=h, label= paste("Median",round(h,2)), size=2.5, vjust=1.5)
 cache('p24')
-# Seems to be a distinct clustering of mean rendering times into approximately 2 clusters around the mean (41.3s)
 
+# Seems to be a distinct clustering of mean rendering times into approximately 2 clusters around the mean (41.3s)
+# Group S/Ns into 4 clusters based on plot
+c1 = comp_gpu$gpuSerial[comp_gpu$gpuSerial < 322000000000]
+c2 = comp_gpu$gpuSerial[comp_gpu$gpuSerial > max(c1) & comp_gpu$gpuSerial < 323500000000]
+c3 = comp_gpu$gpuSerial[comp_gpu$gpuSerial > max(c2) & comp_gpu$gpuSerial < 324000000000]
+c4 = comp_gpu$gpuSerial[comp_gpu$gpuSerial > max(c3)]
+# Check length of vectors sums to 1024
+length(c1)+length(c2)+length(c3)+length(c4)
+# Create dataframe to display S/N ranges by cluster
+sn_cluster_df = data_frame(c(min(c1),max(c1),length(c1)),c(min(c2),max(c2),length(c2)),c(min(c3),max(c3),length(c3)),c(min(c4),max(c4),length(c4)))
+row.names(sn_cluster_df) = c('Minimum S/N','Maximum S/N','n')
+names(sn_cluster_df) = c('Series 1', 'Series 2','Series 3', 'Series 4')
+sn_cluster_df$`Series 1` = as.character(sn_cluster_df$`Series 1`)
+sn_cluster_df$`Series 2` = as.character(sn_cluster_df$`Series 2`)
+sn_cluster_df$`Series 3` = as.character(sn_cluster_df$`Series 3`)
+sn_cluster_df$`Series 4` = as.character(sn_cluster_df$`Series 4`)
+cache('sn_cluster_df')
+
+##### Compare GPU log metrics by GPU S/N
 # Filter GPU task to allow comarison of S/N by GPU log
 gpu_render = gpu_task %>%
         filter(eventName == 'Render') %>%
@@ -305,6 +322,7 @@ task_master = task_runtimes %>%
         select(-hostname) %>%
         # Join stripped down gpu dataset on hostname
         left_join(gpu_task, by = c("taskId" = "taskId", "eventName" = "eventName"))
+cache('task_master')
 # remove other phases leaving render
 task_render = filter(task_master, eventName == 'Render')
 cache('task_render')

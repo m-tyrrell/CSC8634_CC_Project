@@ -45,6 +45,11 @@ knitr::include_graphics(path = "../graphs/terascope.jpg")
 
 # 2. Background
 
+
+As per Hoefler, execution time is often the best metric
+for accessing computer performance because it has an undebatable
+meaning [1].
+
 Terapixel images offer an intuitive, accessible way to present information sets to stakeholders, allowing viewers to interactively browse big data across multiple scales. The challenge we addressed here is how to deliver the supercomputer scale resources needed to compute a realistic terapixel visualization of the city of Newcastle upon Tyne and its environmental data as captured by the Newcastle Urban Observatory.
 
 Our solution is a scalable architecture for cloud-based visualization that we can deploy and pay for only as needed. The three key objectives of this work are to: create a supercomputer architecture for scalable visualization using the public cloud; produce a terapixel 3D city visualization supporting daily updates; undertake a rigorous evaluation of cloud supercomputing for compute intensive visualization applications.
@@ -155,9 +160,9 @@ grid.arrange(p1, p2, p3, p4, ncol=2)
 
 ## 4.2 GPU Performance and Log Metrics Correlation
 
-Figure 3 displays scatter plots of the GPU log metrics correlations. As the GPU dataset is extremely large at 1.5 million observations, a random sample of 10,000 was selected for the plots. As demonstrated, there is a postive correlation between all of the metrics. However, there is also significant variation. This finding matches the observations taken from Figure 2. The positive correlation is to be expected, as the increased workload on the GPU in the form of GPU utilisation percentage will naturally require associated memory for the tiling job, and the demands of this utilisation on the hardware components will result in increased power consumption and rising temperature. 
+Figure 3 displays scatter plots of the GPU log metrics correlations. As the GPU dataset is extremely large at 1.5 million observations, a random sample of 100,000 was selected for the plots. As demonstrated, there is a postive correlation between all of the metrics. However, there is also significant variation. This finding matches the observations taken from Figure 2. The positive correlation is to be expected, as the increased workload on the GPU in the form of GPU utilisation percentage will naturally require associated memory for the tiling job, and the demands of this utilisation on the hardware components will result in increased power consumption and rising temperature. 
 
-```{r eda_f03, fig.cap = "GPU Log Metrics Correlation", fig.pos = "H", out.width='80%', fig.asp=0.2, fig.align='center', echo=FALSE, cache=FALSE}
+```{r eda_f03, fig.cap = "GPU Log Metrics Correlation", fig.pos = "H", out.width='80%', fig.asp=0.2, fig.align='center', echo=FALSE, cache=TRUE}
 # Import plot saved as image (to save pdf rendering time)
 knitr::include_graphics(path = "../graphs/p11.png")
 ```
@@ -204,14 +209,16 @@ The summary statisics for the GPU performance and log metrics provide a succinct
 
 Figure 4 displays the distributions of execution time for each pixel generation. The top plot presents the execution time for rendering and the bottom for the tiling phase. Both distributions appear bimodal, with the larger mode appearing mostly normal with a skew to the right. The smaller mode appears to represents a group of GPUs which exhibit significantly higher performance. However, the computational requirements of each pixel rendering are not uniform. Therefore it is impossible to confirm this from these visualisations (cf. Section 4.4)
 
-The features of the render distribution highlight the importance of documenting system performance beyond summary statistics. The long tail to the right is typical of computational systems, where the accumulated effects of networking, scheduling and processing error push the upper bound towards a log-normal distribution[1]. Were a normal distribution assumed in this case, the standard deviation for the render execution time distribution would be calculated as 6.047s. The maximum execution time at 81.51s would then be a highly improbable 6.7 sigma event.
+The features of the render distribution highlight the importance of documenting system performance beyond summary statistics. The long tail to the right is typical of computational systems, where the accumulated effects of networking, scheduling and processing error push the upper bound towards a log-normal distribution[1]. Therefore the mean execution time is a misleading metric of evaluation. Were a normal distribution assumed in this case, the standard deviation for the render execution time distribution would be calculated as 6.047s. The maximum execution time at 81.51s would then be a highly improbable 6.7 sigma event. 
+
+In evaluating the log-normal execution time distribution of this system, a more meaningful measure are quantiles. For the render phase, 50 percent of operations exceeded 41.65s, with 5 percent exceeding 49.85s. For the tiling phase, 50 percent of operations exceeded 0.99s, with 5 percent exceeding 1.09s.
 
 ```{r eda_f04, fig.cap = "Distribution by Execution Time: Render \\& Tiling (Level 12)", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
 ##### Execution Time Plot - histograms showing distribution of execution times for each event type (Render & Tiling)
 grid.arrange(p12, p13, ncol=1)
 ```
 
-The bimodal characteristics of the distributions in Figure 4 are more pronounced for the rendering phase distribution; a finding which is logical given the doubled sample size for the rendering phase, as well as the vastly larger quantity of GPU logging data available over the 40+ second phase duration. Additionally as the time scale for the rendering phase is relatively large compared to tiling, it is easier to inherently comprehend the effects of variance on the operation through visualisation. As the comparative performance and relationship between the render phase and the other three phases has already been established in previous sections, the render phase will be used to evaluate system performance exlcusively from this point.
+The bimodal characteristics of the distributions in Figure 4 are more pronounced for the rendering phase distribution; a finding which is logical given the doubled sample size for the rendering phase, as well as the vastly larger quantity of GPU logging data available over the 40+ second phase duration. This much greater sample size for the rendering phase translates to greater significance in the use of this phase for system evaluation. Additionally, the time scale for the rendering phase is relatively large compared to the other phases, making it inherently easier to comprehend the effects of variance on the operation through visualisation. As the comparative performance and relationship between the render phase and the other three phases has already been established in previous sections, and the other three phases offer minimal value toward performance analysis, the *render phase will be used to evaluate system performance exlcusively* from this point.
 
 Figures 5 and 6 display the distributions of power consumption, temperature, GPU and memory utilisation for the render phase. The distribution pairs in each figure appear to be similar. This finding matches the observations in Figure 2, where a high degree of correlation was shown between these respective pairs.  
 
@@ -251,26 +258,34 @@ The bottom row of Figure 8 contains various visualisations for execution time. T
 
 The far right plot in Figure 8 is filtered to display only pixels with execution times less than 25s. This filter isolates the smaller of the densities in the bimodal distribution of execution times. As demonstrated, the smaller density is a result of the rendering of the terascope legend; already identified as computationally simple task.
 
-## 4.6 Affect on Execution Time of GPU Enviornmental and Resource Factors
+## 4.5 Effect of GPU Enviornmental and Resource Factors on Execution Time
 
-The variation in rendering by pixel can be elaborated by examining the relationship between the GPU log metrics and execution time. 
+The variation in rendering by pixel can be elaborated by examining the relationship between the GPU log metrics and execution time. The mean of all log metrics are joined with the execution time for each task in the **task_master** dataset. This provides a generalised insight into how power consumption, temperature, GPU and memory utilisation affect execution time.
 
+The results of this analysis are displayed in Figure 9. As illustrated, there are pronounced postive correlations between each metric and execution time. These correlations are primarily linear. Power consumption is a function of system resource utilisation, and can be expected to roughly follow the GPU and memory curves as execution time slows with increase resource usage. Temperature is also a function of system resource utilisation, given stable environmental conditions and thus demonstrates similar characteristics to power consumption. Memory usage shows a stable upwards growth in execution time as the demands on system memory increase.
 
-```{r eda_f09, fig.cap = "Execution Time by GPU Enviromental and Resource Metrics", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', cache=FALSE}
+The exception to the linearity displayed in Figure 9 is GPU utilisation which presents a concave exponential curve, which appears to exhibit plateau characteristics starting at approximately 80 percent utilisation. This is logical in that the GPU is designed for given operational and theoretical throughput, after which non-linear performance degradation would be expected. However, the most dense region of this plot is largely linear, falling between 60 through 80 percent utilisation.
+
+```{r eda_f09, fig.cap = "Execution Time by GPU Enviromental and Resource Metrics", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, cache=TRUE}
 # Plot GPU log metrics affect on execution time
 knitr::include_graphics(path = "../graphs/p39.png")
 ```
 
 
 
-## 4.5 GPU Trends by Unit
+## 4.6 Performance Comparison of Individual GPUs
 
-The distributions of the GPU render phase performance and log metrics raise questions as to why 
+Previous analyses demonstrated the variability in execution time and GPU log metrics over the 65,536 level 12 pixel rendering tasks. As detailed, the computational difficulty in rendering each pixel is variable. Therefore, it is not possible to benchmark and compare performance directly between GPUs using the Terascope rendering data. It is possible however, to observe broad trends between the GPUs by serial number (S/N).
 
-```{r eda_f10, fig.cap = "Execution Time by GPU S/N", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
+Referrring to Figure 10 and Table 3, four distinct series of S/N can be observed from left to right across the plot. Interestingly, the three series on the right side of the plot (Series 2, 3 and 4) appear to form pronounced clusters above and below the median execution time, indicating a strong bimodal distribution of tasks. In a random task allocation process, it would be expected to observe a more single-moded distribution. This is perhaps a result of distributed computing by Azure between geographically diverse datacentres. For instance, in the UK alone Microsoft has 2 separate Azure POPs.
+
+Series 1 does not exhibit the clustering to the same degree as Series 2 through 4. However, referring to Table 3, this series is clearly the least sampled and therefore is not necessarily indicative of the underlying task allocation distribution.
+
+
+```{r eda_f10, fig.cap = "Mean Render Execution Time by GPU S/N", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
 # Plot render time by S/N
 h = median(comp_gpu$avg_dur)
-ggplot(comp_gpu) + geom_point(aes(gpuSerial, avg_dur)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') + 
+ggplot(comp_gpu) + geom_point(aes(gpuSerial, avg_dur)) + labs(x = 'GPU S/N', y = 'Execution Time (s)') + 
         geom_hline(yintercept = h, color = 'red', linetype = 'dotdash') +
         annotate("text", x=comp_gpu$gpuSerial[1]+500000000, y=h, label= paste("Median",round(h,2)), size=2.5, vjust=1.5)
 ```
@@ -280,6 +295,11 @@ ggplot(comp_gpu) + geom_point(aes(gpuSerial, avg_dur)) + labs(x = 'GPU S/N', y =
 
 
 
+```{r eda_t03, echo=FALSE, cache=FALSE}
+# Table showing GPU S/Ns by grouped by series number
+knitr::kable(sn_cluster_df, booktabs = TRUE, caption = 'GPU S/N Series')
+
+```
 
 
 
@@ -292,12 +312,11 @@ ggplot(comp_gpu) + geom_point(aes(gpuSerial, avg_dur)) + labs(x = 'GPU S/N', y =
 
 
 
-
-## 4. Summary of Results Evaluation and Business Conclusions
+## 5. Results Evaluation and Reccomendations
 
 The analysis returned numerous results relevant to the business objectives. These results are summarised and evaluated below. Summary conclusions and reccomendations are included where applicable. 
 
-### 4.1 Findings
+### 5.1 Findings
 
 **GPU loggin should be higher granularity**\newline
 There are noteable missing data in Table 1 for the 'Saving Config', 'Uploading' and 'Tiling' phases over the GPU and memory utilisation metrics. The dataset used to compute the table was taken from **gpu_task**. This dataset is a join of **gpu** with **app_task**, where each gpu observation is matched by the VM hostname and timestamp for each phase. Despite the reasonably high resolution of the GPU logging operation (each GPU logged performance metrics approximately every 2 seconds), on average these task phases occur over very short intervals (around 1 second or less). As such, these phases were statistically less likely to occur during coincident GPU logging, and consequently have a much smaller sample size relative to the rendering phase. 
@@ -316,7 +335,13 @@ In contrast to the execution time analysis, the distributions for the GPU logged
 Comparing the variation in GPU execution time and log metrics is problematic in that the workload assigned to each GPU is not identical. Each pixel is unique, and therefore the computational cost of rendering each pixel is not uniform. Various complexities in the input including topological structure affect the processing time and resources required to render the pixel. 
 
 
-## Conclusions for future data mining
+**Benchmarking performance requires increased granularity to examine affects on execution time with pushed resources**\newline 
+As illustrated, there are pronounced postive correlations with between each metric and execution time. These correlations are primarily linear with plateau characteristics. The exception is GPU utilisation which displays a concave exponential curve. This is surprising in that a convex curve would be expected, with processing throughput slowing exponentially under increased workload. However, the plot contains very few observations past 85 percent utilisation, indicating that further demands on the processor could result in slowing execution times.
+
+**Examine task allocation by S/N**\newline 
+Interestingly, the three series on the right side of the plot (Series 2, 3 and 4) appear to form pronounced clusters above and below the median execution time, indicating a strong bimodal distribution of tasks. In a random task allocation process, it would be expected to observe a more single-moded distribution.
+
+## Conclusions
 
 The large quantity of missing demographic data (approximately 90%) limited meaningful analysis of subsets of the sample. For instance, though there were 289 observations in the dataset of paid learners, only 13 of these obervations had complete demographic variables. Therefore it was impossible to draw statistical inference about demographic factors contributing to paid upgrades. If there was someway of enticing users to enter demographic data more frequently, it could vastly increase the utitlity of the learning analytics for this course. 
 
@@ -330,460 +355,9 @@ The large quantity of missing demographic data (approximately 90%) limited meani
 
 3. National Science Foundation, National Center for Science and Engineering Statistics, Scientists and Engineers Statistical Data System (SESTAT) and National Survey of College Graduates (NSCG) (1993, 2013), http://sestat.nsf.gov.
 
-## Appendix: R-Code
 
-#### The code below is provided for reference and reproducibility purposes. The sections detail the individual data files used for the analysis, and the order reflects the loading seqence. 
 
-```{r, echo=TRUE, eval=FALSE}
-################################### Munge: 01-A.R ########################################
 
-##### Read csv data files, combine by type (rbind), clean/transform as required and cache as .RData
 
-##### Enrolments
-# Load and combine all datasets
-list_sel = list.files(path = "data/", pattern = "*enrolments*")
-x <- lapply(list_sel, function(i) read.csv(file = paste("data/",i,sep = "")))
-df_enrolments <- do.call('rbind', x) 
 
-# Clean & Transform
-df_enrolments = df_enrolments %>%
-        #Convert date columns to POSIX UTC
-        mutate(enrolled_at = as.character(enrolled_at)) %>%
-        mutate(unenrolled_at = as.character(unenrolled_at)) %>%
-        mutate(fully_participated_at = as.character(fully_participated_at)) %>%
-        mutate(purchased_statement_at = as.character(purchased_statement_at)) %>%
-        mutate(enrolled_at = ymd_hms(enrolled_at, tz="UTC")) %>%
-        mutate(unenrolled_at = ymd_hms(unenrolled_at, tz="UTC")) %>%
-        mutate(fully_participated_at = ymd_hms(fully_participated_at, tz="UTC")) %>%
-        mutate(purchased_statement_at = ymd_hms(purchased_statement_at, tz="UTC")) %>%
-        #Convert country to character vector
-        mutate(detected_country = as.character(detected_country)) %>%
-        # Add derived variables to display Days Enrolled, Days to Completion, and binary completion variable
-        mutate(days_enrolled = as.numeric(round(difftime(unenrolled_at, enrolled_at, unit="days"),0))) %>%
-        mutate(days_to_completion = as.numeric(round(difftime(fully_participated_at, enrolled_at, unit="days"),0))) %>%
-        mutate(completed = ifelse(is.na(fully_participated_at), 0, 1)) %>%
-        mutate(learner_id = as.character(learner_id))
 
-cache("df_enrolments")
-
-##### Step Activity
-# Load and combine all datasets
-list_sel = list.files(path = "data/", pattern = "*activity*")
-x <- lapply(list_sel, function(i) read.csv(file = paste("data/",i,sep = "")))
-df_step_activity <- do.call('rbind', x)
-
-# Clean & Transform
-df_step_activity = df_step_activity %>%
-        #Convert date columns to POSIX UTC
-        mutate(first_visited_at = ymd_hms(first_visited_at, tz="UTC")) %>%
-        mutate(last_completed_at = ymd_hms(last_completed_at, tz="UTC")) %>%
-        mutate(learner_id = as.character(learner_id))
-
-cache("df_step_activity")
-
-
-##### Functions
-#Tabulate function (shows percentage)
-tblFun <- function(x){
-        tbl <- table(x)
-        res <- cbind(tbl,round(prop.table(tbl)*100,2))
-        colnames(res) <- c('Count','Percentage')
-        res
-}
-
-cache("tblFun")
-
-############################### EDA EDA_Enrolment.R ######################################
-
-# DF Step Activity
-
-# Create working object from cached dateset
-df_enrol = df_enrolments
-
-cache("df_enrol")
-
-
-### 3.1 Profile existing student base
-
-#Student data summary statistics (filtering out unknowns and insufficient samples)
-df_enrol_dt = filter(df_enrol, gender != "Unknown" & gender != "nonbinary" & gender != "other" 
-                     & age_range != "Unknown" & detected_country != "--" & highest_education_level != "Unknown" & employment_status != "Unknown")
-
-#Reorder factor levels and remove unknown
-df_enrol_dt$age_range = factor(df_enrol_dt$age_range, c("<18","18-25","26-35","36-45","46-55","56-65",">65"))
-df_enrol_dt$gender = factor(df_enrol_dt$gender, c("male", "female"))
-df_enrol_dt$highest_education_level = factor(df_enrol_dt$highest_education_level, c("apprenticeship","less_than_secondary","professional","secondary","tertiary","university_degree","university_masters","university_doctorate"))
-df_enrol_dt$employment_status = factor(df_enrol_dt$employment_status, c("full_time_student","looking_for_work","not_working","retired","self_employed","unemployed","working_full_time","working_part_time"))
-#Rename factor levels
-df_enrol_dt$highest_education_level = mapvalues(df_enrol_dt$highest_education_level, 
-        from = c("apprenticeship","less_than_secondary","professional","secondary","tertiary","university_degree","university_masters","university_doctorate"), 
-        to = c("apprentice","< secondary","professional","secondary","tertiary","bachelors","masters","doctorate"))
-df_enrol_dt$employment_status = mapvalues(df_enrol_dt$employment_status,
-        from = c("full_time_student","looking_for_work","not_working","retired","self_employed","unemployed","working_full_time","working_part_time"),
-        to = c("student","seeking work","not working","retired","self-employed","unemployed","full-time work","part-time work"))
-
-
-cache("df_enrol_dt")
-
-
-#Gender histogram
-ggplot(df_enrol_dt) + stat_count(aes(gender), fill=I("#0066CC"), col=I("white"), alpha=I(0.8)) +
-        labs(x = "Gender", y = "Count", title = "Gender")
-
-tblFun(df_enrol_dt$gender)
-
-#Age group histogram
-ggplot(df_enrol_dt) + stat_count(aes(age_range), fill=I("#0066CC"), col=I("white"), alpha=I(0.8)) +
-        labs(x = "Age Groups", y = "Count", title = "Age Groups")
-
-tblFun(df_enrol_dt$age_range)
-
-#Education histogram
-ggplot(df_enrol_dt) + stat_count(aes(highest_education_level), fill=I("#0066CC"), col=I("white"), alpha=I(0.8)) +
-        labs(x = "Education", y = "Count", title = "Education")
-
-tblFun(df_enrol_dt$highest_education_level)
-
-#Employment histogram
-ggplot(df_enrol_dt) + stat_count(aes(employment_status), fill=I("#0066CC"), col=I("white"), alpha=I(0.8)) +
-        labs(x = "Employment Status", y = "Count", title = "Employment Status")
-
-tblFun(df_enrol_dt$employment_status)
-
-#Country
-#Transform data for detected country, aggregate by count for each country, select top countries by x amount
-df_enrol_ct = df_enrol %>%
-        dplyr::select(detected_country) %>%
-        filter(detected_country != "--") %>%
-        mutate(count = 1) %>%
-        group_by(detected_country) %>%
-        summarise(sum(count)) %>%
-        rename(Country = detected_country, Count = "sum(count)") %>%
-        mutate(Percentage = round(Count/sum(Count)*100,2)) %>%
-        filter(Count > 95) %>%
-        arrange(desc(Count))
-
-cache("df_enrol_ct")
-
-#Convert to names for table
-df_enrol_ct_name = df_enrol_ct
-df_enrol_ct_name$Country = countrycode(df_enrol_ct_name$Country, "iso2c", "country.name")
-cache("df_enrol_ct_name")
-
-#Plot and table
-ggplot(df_enrol_ct_name, aes(Country, Count)) + geom_col(fill=I("#0066CC"), col=I("white"), alpha=I(0.8)) + 
-        labs(x = "Country", y = "Count", title = "Nationality")
-
-df_enrol_ct_name[1:10,]
-
-#Create map object        
-map_country = invisible(joinCountryData2Map(df_enrol_ct, joinCode = "ISO2", nameJoinColumn = "Country", verbose = FALSE))
-cache("map_country")
-#creating a user defined colour palette
-# op = palette(c('green','yellow','orange','red'))
-# #find quartile breaks
-# cutVector = quantile(df_enrol_ct$Count, prob = seq(0, 1, length = 11), type = 5)
-# #classify the data to a factor
-# df_enrol_ct$Count = cut(df_enrol_ct$Count, cutVector, include.lowest = TRUE)
-# #rename the categories
-# levels(df_enrol_ct$Count) = c('low', 'med', 'high', 'vhigh', 't1', 't2','t3','t4','t5','t6')
-# #mapping by shade
-# par(mai=c(0,0,0.2,0),xaxs="i",yaxs="i")
-mapCountryData(map_country, nameColumnToPlot = "Count", catMethod='logFixedWidth', mapTitle='Learners by Top 50 Countries', colourPalette = "heat", oceanCol='lightblue', missingCountryCol='white', aspect = 1.5)
-
-#mapping by bubble
-# par(mai=c(0,0,0.2,0),xaxs="i",yaxs="i")
-# mapBubbles(dF=map_country, nameZSize="Count", nameZColour="Count", numCats = 10, catMethod='categorical', colourPalette='white2Black', oceanCol='lightblue', landCol='wheat', addColourLegend = FALSE, mapTitle='Test')
-
-### 3.2 Performance Metrics
-
-##### Completion Data (n = 2154)
-df_enrol_days_cp = filter(df_enrol, !is.na(days_to_completion))
-
-cache("df_enrol_days_cp")
-
-#Plot Course Completion Duration frequency
-ggplot(df_enrol_days_cp, aes(days_to_completion)) + geom_histogram(binwidth = 10, fill=I("#0066CC"), col=I("white"), alpha=I(0.8)) + 
-        labs(x = "Days", y = "Count", title = "Histogram: Successful Course Completion Duration (days)") + theme(text = element_text(size=9)) +
-        scale_x_continuous(breaks = round(seq(min(df_enrol_days_cp$days_to_completion), max(df_enrol_days_cp$days_to_completion), by = 25),1))
-ggsave(file.path('graphs', 'course_completion_duration.pdf'))
-
-
-############################### EDA EDA_Step_Activity.R ##################################
-
-#DF Step Activity
-
-# Create working object from cached dateset
-df_step = df_step_activity
-
-# 1. Analysis of Completion Duration by Step
-#Compute number of average days take to complete each step
-df_step_avg = df_step %>%
-        #Add derived variable for duration per step
-        mutate(total_days = as.numeric(round(difftime(last_completed_at, first_visited_at, unit="days"),0))) %>%
-        #Strip all variables except step and total_days
-        dplyr::select(step, total_days) %>%
-        #Aggregate
-        group_by(step) %>%
-        summarise(total_days = round(mean(total_days, na.rm = TRUE),1)) %>%
-        #Remove sub-levels
-        filter(step < 1.11 | step > 1.19) %>%
-        filter(step < 2.11 | step > 2.19) %>%
-        filter(step < 2.21 | step > 2.29) %>%
-        filter(step < 3.11 | step > 3.19)
-
-cache("df_step_avg")
-
-#Plot average days per step
-ggplot(df_step_avg, aes(step, total_days)) + geom_col(size = 1, fill=I("#0066CC"), colour = "#0066CC", alpha=I(0.8)) + labs(x = "Step", y = "Days", 
-        title = "Average Completion Duration per Step (days)")  + 
-        scale_x_continuous(breaks = round(seq(min(df_step_avg$step), max(df_step_avg$step), by = 0.1),1))
-ggsave(file.path('graphs', 'avg_comp_duration_step.pdf'))
-
-
-# 2. Analysis of Dropout Frequency by Step
-df_step_max = df_step %>%
-        #Compute maximum level completed for each unique learner ID
-        filter(is.na(last_completed_at)) %>%
-        dplyr::select(learner_id, step) %>%
-        group_by(learner_id) %>%
-        summarise(step = max(step))
-
-cache("df_step_max")
-
-df_step_drop = df_step_max %>%
-        # Add Count variable (= 1 for each row) and drop learner_id
-        mutate(Count = ifelse(!is.na(learner_id), 1, 0)) %>%
-        mutate(learner_id = NULL) %>%
-        # Remove sub-levels
-        filter(step < 1.11 | step > 1.19) %>%
-        filter(step < 2.11 | step > 2.19) %>%
-        filter(step < 2.21 | step > 2.29) %>%
-        filter(step < 3.11 | step > 3.19)
-        
-cache("df_step_drop")
- 
-#Plot frequency of drop out by step number
-ggplot(df_step_drop, aes(step)) + geom_histogram(binwidth = 0.1, fill=I("#0066CC"), col=I("white"), alpha=I(0.8)) + 
-        labs(x = "Step", y = "Count", title = "Histogram: Last Step Completed") +
-        scale_x_continuous(breaks = round(seq(min(df_step_drop$step), max(df_step_drop$step), by = 0.1),1)) +
-        theme(text = element_text(size=10)) 
-ggsave(file.path('graphs', 'dropout_by_step.pdf'))
-
-#Percentage dropout by step 1.1
-dim(filter(df_step_drop, step == 1.1))[1]/dim(df_step_drop)[1]
-
-
-################################# EDA EDA_Join.R #########################################
-
-
-### Join enrolments data (age, gender etc) with step activity on learner_id and look at performance based on demographics etc (n= 3995)
-# Left join on enrolements data (as opposed to step activity data) because demographic (interesting) data is complete. 
-#Dataset containing full demographic variables (n = 3819)
-df_step_perf = left_join(df_enrol_dt, df_step_max, copy = FALSE)
-df_step_perf = df_step_perf %>%
-        #Drop unused columns
-        dplyr::select(-(enrolled_at:fully_participated_at)) %>%
-        mutate(country = NULL) %>%
-        #Convert all "completed" steps to 3.9 (otherwise shows NA in some cases)
-        mutate(step = ifelse(is.na(step) & completed == 1, 3.9, step)) %>%
-        #Create new binary var to show course purchase
-        mutate(purchased = ifelse(!is.na(purchased_statement_at),1,0))
-
-cache("df_step_perf")
-
-####Predictor Gender
-p1 = ggplot(data = df_step_perf, mapping = aes(x = gender, y = step)) + geom_boxplot(fill=I("#0066CC"), col=I("darkgrey"), alpha=I(0.8), size=0.7) + 
-        labs(x = "Gender", y = "Step", title = "a) Gender") + 
-        scale_y_continuous(breaks = round(seq(min(df_step_perf$step, na.rm = TRUE), max(df_step_perf$step, na.rm = TRUE), by = 0.2),1))
-dat1 = ggplot_build(p1)$data[[1]]
-p1 = p1 + geom_segment(data=dat1, aes(x=xmin, xend=xmax, y=middle, yend=middle), colour="white", size=0.7)
-cache("p1")
-
-####Predictor Age
-p2 = ggplot(data = df_step_perf, mapping = aes(x = age_range, y = step)) + geom_boxplot(fill=I("#0066CC"), col=I("darkgrey"), alpha=I(0.8), size=0.7) + 
-        labs(x = "Age Range", y = "Step", title = "b) Age Range") +
-        scale_y_continuous(breaks = round(seq(min(df_step_perf$step, na.rm = TRUE), max(df_step_perf$step, na.rm = TRUE), by = 0.2),1))
-dat2 = ggplot_build(p2)$data[[1]]
-p2 = p2 + geom_segment(data=dat2, aes(x=xmin, xend=xmax, y=middle, yend=middle), colour="white", size=0.7)
-cache("p2")
-
-####Predictor Education
-p3 = ggplot(data = df_step_perf, mapping = aes(x = highest_education_level, y = step)) + geom_boxplot(fill=I("#0066CC"), col=I("darkgrey"), alpha=I(0.8), size=0.7) + 
-        labs(x = "Education Level", y = "Step", title = "c) Education") +
-        scale_y_continuous(breaks = round(seq(min(df_step_perf$step, na.rm = TRUE), max(df_step_perf$step, na.rm = TRUE), by = 0.2),1)) +
-        theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
-dat3 = ggplot_build(p3)$data[[1]]
-p3 = p3 + geom_segment(data=dat3, aes(x=xmin, xend=xmax, y=middle, yend=middle), colour="white", size=0.7)
-cache("p3")
-
-####Predictor Employment Status
-p4 = ggplot(data = df_step_perf, mapping = aes(x = employment_status, y = step)) + geom_boxplot(fill=I("#0066CC"), col=I("darkgrey"), alpha=I(0.8), size=0.7) + 
-        labs(x = "Employment Status", y = "Step", title = "d) Employment Status") +
-        scale_y_continuous(breaks = round(seq(min(df_step_perf$step, na.rm = TRUE), max(df_step_perf$step, na.rm = TRUE), by = 0.2),1)) + 
-        theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
-dat4 = ggplot_build(p4)$data[[1]]
-p4 = p4 + geom_segment(data=dat4, aes(x=xmin, xend=xmax, y=middle, yend=middle), colour="white", size=0.7)
-cache("p4")
-
-pred_grid = grid.arrange(p1, p2, p3, p4, ncol=2)
-
-
-##Country boxplot
-#Derive and sort top 10 countries from df_enrol_ct dataset
-ordered <- order(df_enrol_ct$Count, decreasing = TRUE)
-top_countries = df_enrol_ct[ordered,][1:20,]
-#Filter dataset for top 10 countries
-df_step_perf_ct = df_step_perf %>%
-        filter(detected_country %in% top_countries$Country) %>%
-        mutate(step = ifelse(is.na(step), 0, step)) %>%
-        group_by(detected_country) %>%
-        summarise(step = mean(step))
-        # arrange(step)
-df_step_perf_ct$detected_country = countrycode(df_step_perf_ct$detected_country, "iso2c", "country.name")
-cache("df_step_perf_ct")
-####Predictor Country
-ggplot(data = df_step_perf_ct, mapping = aes(x = reorder(detected_country, step), y = step)) + geom_col(fill=I("#0066CC"), col=I("white"), alpha=I(0.8)) +
-        theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + 
-        labs(x = "Country", y = "Step", title = "Step Performance by Country (Top 20)")
-
-
-################################ LM Var Tests  ###########################################
-
-#Ages
-levs = levels(df_predictors$age_range)
-p = c()
-for(i in 1:length(levs)){
-        x = dim(filter(df_predictors, age_range == levs[i] & completed == 1))[1]
-        y = dim(filter(df_predictors, age_range == levs[i]))[1]
-        z = x/y
-        p[i] = log(z/ (1 - z))
-}
-plot(p)
-
-#Education
-levs = levels(df_predictors$highest_education_level)
-p = c()
-for(i in 1:length(levs)){
-        x = dim(filter(df_predictors, highest_education_level == levs[i] & completed == 1))[1]
-        y = dim(filter(df_predictors, highest_education_level == levs[i]))[1]
-        z = x/y
-        p[i] = log(z/ (1 - z))
-}
-plot(p)
-
-############################## Linear Modelling  #########################################
-
-### Predictive Modelling
-
-df_predictors = df_step_perf
-
-#Transform predictor dataset
-df_predictors = df_predictors %>%
-        #Remove extra vars
-        dplyr::select(-(learner_id:purchased_statement_at)) %>%
-        dplyr::select(-(employment_area:days_to_completion)) %>%
-        dplyr::select(-(step:purchased))
-
-
-#Convert nominal categorical var to binary integer
-df_predictors$gender = (as.integer(df_predictors$gender)-1)  
-#Convert categorical vars to integers as per results of ordinalt tests (ref. Ordinal_test.R))
-df_predictors$age_range = as.integer(df_predictors$age_range)
-df_predictors$highest_education_level = as.integer(df_predictors$highest_education_level)
-
-
-
-###### PRELIM MODEL
-#Deconstruct, standardise and rebuild predictors dataset (& remove employment status because of conversion difficulty)
-df_predictors_std = scale(as.matrix(df_predictors[,1:3]))
-df_predictors_lm = data.frame(df_predictors_std, df_predictors[,5])
-names(df_predictors_lm) = c("gender","age_range","highest_education_level","completed")
-
-#Fit the Linear model using the dataset
-lr_fit = glm(completed ~ ., data = df_predictors_lm, family = "binomial")
-summary(lr_fit)
-#Compute prediction probabilities
-phat = predict(lr_fit, df_predictors_lm, type = "response")
-#Compute fitted (i.e. predicted) values
-yhat = ifelse(phat > 0.5, 1, 0)
-#Calculate confusion matrix
-table(Observed=df_predictors_lm$completed, Predicted = yhat)
-#Compute training error
-1 - mean(df_predictors_lm$completed == yhat)
-
-
-
-
-###### FINAL MODEL 
-
-#Final model Age + Gender
-df_predictors_lm_red = df_predictors_lm[,-3]
-names(df_predictors_lm_red) = c("gender","age_range","completed")
-
-set.seed(20)
-#Create training and testing sets
-len_set = dim(df_predictors_lm_red)[1]
-train_qt = round(len_set*0.9,0)
-random_sel = sample(len_set, len_set, replace = FALSE)
-#Create test/training indices
-train_sel = random_sel[1:train_qt]
-test_sel = random_sel[(train_qt+1):len_set]
-#Slice predictors df into test/training dfs
-df_train = filter(df_predictors_lm_red, row_number() %in% train_sel)
-df_test = filter(df_predictors_lm_red, row_number() %in% test_sel)
-
-#Fit the Linear model using the dataset
-lr_fit_final = glm(completed ~ ., data = df_train, family = "binomial")
-
-cache("lr_fit_final")
-
-summary(lr_fit_final)
-#Compute prediction probabilities
-phat_test = predict(lr_fit_final, df_test, type = "response")
-#Compute fitted (i.e. predicted) values
-yhat_test = ifelse(phat_test > 0.5, 1, 0)
-#Calculate LR confusion matrix
-conf_matrix = table(Observed=df_test$completed, Predicted = yhat_test)
-#Compute LR test error
-lr_test_error = 1 - mean(df_test$completed == yhat_test)
-
-cache("conf_matrix")
-cache("lr_test_error")
-
-
-
-###### CROSS VALIDATION
-
-n=nrow(df_predictors_lm_red)
-
-set.seed(20)
-#10-fold cross validation
-nfolds = 10
-#Sample fold-assingment index
-fold_index = sample(nfolds, n, replace=TRUE)
-fold_sizes = numeric(nfolds)
-#Compute fold sizes
-for(k in 1:nfolds){
-        fold_sizes[k] = length(which(fold_index==k))
-        fold_sizes
-}
-
-#Assign vector for avg MSE
-cv_lsq_errors = numeric(nfolds)
-
-#Loop through folds fitting model to k-1 training data and predicting values for k, assign errors to vector
-for(k in 1:nfolds){
-        #Fit model by least squares using all but the k-th fold
-        lsq_tmp_fit = glm(completed ~ ., data=df_predictors_lm_red[fold_index!=k,], family = "binomial")
-        #Compute fitted values for the k-th fold
-        phat = predict(lsq_tmp_fit, df_predictors_lm_red[fold_index == k,], type = "response")
-        #Work out the MSE for the k-th fold
-        yhat = ifelse(phat > 0.5, 1, 0)
-        cv_lsq_errors[k] = mean((df_predictors_lm_red[fold_index==k,]$completed - yhat)^2)
-}
-
-#Take mean of error vector
-cross_val_test_error = weighted.mean(cv_lsq_errors, w=fold_sizes)
-
-cache("cross_val_test_error")
