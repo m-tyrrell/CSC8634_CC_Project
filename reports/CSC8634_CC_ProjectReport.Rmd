@@ -1,5 +1,5 @@
 ---
-title: "Analysis of Terascope Benchmarking Data"
+title: "Terascope Terapixel Deployment: Computational Analysis"
 author: "Mark R. Tyrrell"
 date: "23/01/2019"
 output:
@@ -18,26 +18,14 @@ knitr::opts_chunk$set(fig.pos = 'H')
 # knitr::kable()
 ```
 
-
-
 ```{r load_project, include=FALSE}
 library(ProjectTemplate);load.project()
 
 ```
 
-
-
-
-```{r, echo=FALSE}
-
-```
-
 # 1. Introduction
 
- Visualization methods
-panoramic images show potential for visualizing multiscale urban data. accessible route to supercomputer visualizations on many low cost devices.
-Visual supercomputing
-deployed 14 PFlop cloud supercomputer, larger than any GPU HPC system in UK. cost in total for one result (a scaling graph) ~£20,000 using > £10 million computer. Azure improved (from K80 to V100) during the project, we immediately benefited. provides access to performance approx. 20 years ahead of current desktop systems.
+The visualisation of multiscale urban data accessible on low cost thin client devices offers increasing benefits in many contexts including urban planning and disaster management. Distributed super computing makes this possible by outsourcing pixel rendering to cloud resources. The computational requirements of rendering images to this level are not insignificant, with pixels representing terrestrial topography to the millimeter. Newcastle University's recently deployed Terascope Terapixel project provides an interesting opportunity to analyse performance of such a system in order to further understanding of the underlying computational processes.
 
 ```{r,eda_f01a, echo=FALSE, fig.cap = "Newcastle University Terascope", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', cache=TRUE}
 knitr::include_graphics(path = "../graphs/terascope.jpg")
@@ -45,32 +33,26 @@ knitr::include_graphics(path = "../graphs/terascope.jpg")
 
 # 2. Background
 
+The Terapixel project offers an intuitive, accessible way to present information sets to stakeholders, allowing viewers to interactively browse big data across multiple scales. The challenge addressed during the project was delivering the supercomputer scale resources needed to compute a realistic terapixel visualization of the city of Newcastle upon Tyne and its environmental data as captured by the Newcastle Urban Observatory[2].
 
-As per Hoefler, execution time is often the best metric
-for accessing computer performance because it has an undebatable
-meaning [1].
+The developed solution was a scalable architecture for cloud-based visualization that can be deployed and payed for as required. The three key objectives of the project were to: 1) create a supercomputer architecture for scalable visualization using the public cloud; 2) produce a terapixel 3D city visualization supporting daily updates; 3) undertake a rigorous evaluation of cloud supercomputing for compute intensive visualization applications.
 
-Terapixel images offer an intuitive, accessible way to present information sets to stakeholders, allowing viewers to interactively browse big data across multiple scales. The challenge we addressed here is how to deliver the supercomputer scale resources needed to compute a realistic terapixel visualization of the city of Newcastle upon Tyne and its environmental data as captured by the Newcastle Urban Observatory.
+The project demonstrated that it is feasible to produce a high quality terapixel visualization using a path tracing renderer in under a day using public IaaS cloud GPU nodes. Once generated the terapixel image supports interactive browsing of the city and its data at a range of sensing scales from the whole city to a single desk in a room, accessible across a wide range of thin client devices.
 
-Our solution is a scalable architecture for cloud-based visualization that we can deploy and pay for only as needed. The three key objectives of this work are to: create a supercomputer architecture for scalable visualization using the public cloud; produce a terapixel 3D city visualization supporting daily updates; undertake a rigorous evaluation of cloud supercomputing for compute intensive visualization applications.
+## Computational Analysis
 
-We demonstrate that it is feasible to produce a high quality terapixel visualization using a path tracing renderer in under a day using public IaaS cloud GPU nodes. Once generated the terapixel image supports interactive browsing of the city and its data at a range of sensing scales from the whole city to a single desk in a room, accessible across a wide range of thin client devices.
+The rendering process produced numerous data documenting the various phases of the process. Analysis of these data provides insight into the underlying dynamics of the computational process in order to aid with the design and implementation of future terapixel rendering systems, as well as to provide an analytic basis for designing future benchmarking tests. 
 
-Problem Description
+Following consultation with the system developers, the analysis focused on the following key areas of inquiry: 
 
-The dataset below was created from application checkpoint and system metric output from the production of a terapixel image. There are a variety of problems which can be addressed using the TeraScope dataset. Each will commence with an exploratory data analysis. Examples of questions you may wish to be able to answer through the EDA process are as follows:
+*Which event types dominate task runtimes?
+*What is the interplay between GPU temperature and performance?
+*What is the interplay between increased power draw and render time?
+*Can we quantify the variation in computation requirements for particular tiles?
+*Can we identify particular GPU cards (based on their serial numbers) whose performance differs to other cards? (i.e. perpetually slow cards).
+*What can we learn about the efficiency of the task scheduling process?
 
-Which event types dominate task runtimes?
-What is the interplay between GPU temperature and performance?
-What is the interplay between increased power draw and render time?
-Can we quantify the variation in computation requirements for particular tiles?
-Can we identify particular GPU cards (based on their serial numbers) whose performance differs to other cards? (i.e. perpetually slow cards).
-What can we learn about the efficiency of the task scheduling process?
-A project may focus entirely on the EDA process, or you may also wish to develop a data product to allow interactive exploration of the data. For example, you could develop a Shiny dashboard to display the results of your analysis into render performance and system operation, displaying timelines of execution based on the application checkpoint data.
-
-
-
-
+This inquiry characterises the system through various analyses, but primarily relies on execution time as the key performance metric. As per Hoefler, "execution time is often the best metric for accessing computer performance because it has an undebatable meaning"[1].
 
 # 3. Methodology
 Data analysis was conducted using the R programming language and the R Studio IDE, with the report composed in Rmarkdown. The ProjectTemplate library was used to organise the project and ensure reproducability. Version control was managed using git and Github. 
@@ -88,7 +70,7 @@ This file contains 660,400 observations over 6 variables detailing application c
 
 1. **timestamp**   Timestamp of observation entry
 2. **hostname**    Unique hostname of the virtual machine auto-assigned by the Azure batch system (Total unique: 1024)
-3. **eventName**   Name of the event occuring within the rendering application. Possible Values:
+3. **eventName**   Name of the event occurring within the rendering application. Possible Values:
     + **Tiling**    Post processing of the rendered tile
     + __Saving__    Measure of configuration overhead
     + __Render__    Actual rendering operation
@@ -118,7 +100,7 @@ This file contains 65,793 observations over 5 variables detailing the tile x,y c
 2. **taskId** ID of the Azure batch task (Total: 65793 level 4 1x1; level 8 16x16; level 12 256x256)
 3. **x** X co-ordinate of the image tile being rendered (Total unique: 256)
 4. **y** Y co-ordinate of the image tile being rendered (Total unique: 256)
-5. **level** 3 zoomable "google maps style" map levels. 12 levels in totla. Level 1 is zoomed right out and level 12 is zoomed right in. Only levels 4, 8 and 12 in the dataset as the intermediate levelx are derived during the tiling process.
+5. **level** 3 zoomable "google maps style" map levels. 12 levels in total. Level 1 is zoomed right out and level 12 is zoomed right in. Only levels 4, 8 and 12 in the dataset as the intermediate levels are derived during the tiling process.
 
 
 ## 3.2 Data Preparation
@@ -134,7 +116,7 @@ As detailed in section 2.2, the data show 1024 unique VMs, each with an attached
 
 ## 4.1 GPU Single Unit Examination
 
-In order to understand the dataset better, a single GPU was selected at random from the **gpu** dataset (S/N: 323617042631). The logged data for this GPU over the first 10 minutes of processing are displayed in Figure 2. The cycles for each pixel render can be clearly seen in the plot for each metric. Each pixel render appears to take approximately 40 seconds. GPU utlisation percentage appears relatively uniform for each pixel render at approximately 90%, whereas there is more variation on the other metrics. This is possibly a result of a percentage usage software limit on the GPU. Unsurprisingly, the temperature builds up from a cold start over successive pixel renders. 
+In order to understand the dataset better, a single GPU was selected at random from the **gpu** dataset (S/N: 323617042631). The logged data for this GPU over the first 10 minutes of processing are displayed in Figure 2. The cycles for each pixel render can be clearly seen in the plot for each metric. Each pixel render appears to take approximately 40 seconds. GPU utilization percentage appears relatively uniform for each pixel render at approximately 90%, whereas there is more variation on the other metrics. This is possibly a result of a percentage usage software limit on the GPU. Unsurprisingly, the temperature builds up from a cold start over successive pixel renders. 
 
 ```{r eda_f02, fig.cap = "Sample GPU Log Metrics over Time", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
 # Create index column with accessible numbers for each gpu serial number
@@ -160,7 +142,7 @@ grid.arrange(p1, p2, p3, p4, ncol=2)
 
 ## 4.2 GPU Performance and Log Metrics Correlation
 
-Figure 3 displays scatter plots of the GPU log metrics correlations. As the GPU dataset is extremely large at 1.5 million observations, a random sample of 100,000 was selected for the plots. As demonstrated, there is a postive correlation between all of the metrics. However, there is also significant variation. This finding matches the observations taken from Figure 2. The positive correlation is to be expected, as the increased workload on the GPU in the form of GPU utilisation percentage will naturally require associated memory for the tiling job, and the demands of this utilisation on the hardware components will result in increased power consumption and rising temperature. 
+Figure 3 displays scatter plots of the GPU log metrics correlations. As the GPU dataset is extremely large at 1.5 million observations, a random sample of 100,000 was selected for the plots. As demonstrated, there is a positive correlation between all of the metrics. However, there is also significant variation. This finding matches the observations taken from Figure 2. The positive correlation is to be expected, as the increased workload on the GPU in the form of GPU utilisation percentage will naturally require associated memory for the tiling job, and the demands of this utilisation on the hardware components will result in increased power consumption and rising temperature. 
 
 ```{r eda_f03, fig.cap = "GPU Log Metrics Correlation", fig.pos = "H", out.width='80%', fig.asp=0.2, fig.align='center', echo=FALSE, cache=TRUE}
 # Import plot saved as image (to save pdf rendering time)
@@ -173,7 +155,7 @@ knitr::include_graphics(path = "../graphs/p11.png")
 
 ### 4.3.1 Summary Statistics
 
-Table 1 displays the mean of each GPU log metric by each phase in the pixel rendering process. The rendering task is easily identifiable as the most energy-intense phase of pixel generation, with power consumption more than double that of the second highest phase. There is much less variation in relative temperatures, though rendering is still noteably higher in mean temperature than the other phases. 
+Table 1 displays the mean of each GPU log metric by each phase in the pixel rendering process. The rendering task is easily identifiable as the most energy-intense phase of pixel generation, with power consumption more than double that of the second highest phase. There is much less variation in relative temperatures, though rendering is still notably higher in mean temperature than the other phases. 
 
 ```{r eda_t01, echo=FALSE, cache=TRUE}
 # Table showing means of all gpu metrics for each task mean by event
@@ -186,11 +168,11 @@ knitr::kable(gpu_plot_agg, booktabs = TRUE, caption = 'Mean GPU Log Metrics by P
 
 ```
 
-There are noteable missing data in Table 1 for the 'Saving Config', 'Uploading' and 'Tiling' phases over the GPU and memory utilisation metrics. The dataset used to compute the table was taken from **gpu_task**. This dataset is a join of **gpu** with **app_task**, where each gpu observation is matched by the VM hostname and timestamp for each phase. Despite the reasonably high resolution of the GPU logging operation (each GPU logged performance metrics approximately every 2 seconds), on average these task phases occur over very short intervals (around 1 second or less). As such, these phases were statistically less likely to occur during coincident GPU logging, and consequently have a much smaller sample size relative to the rendering phase. 
+There are notable missing data in Table 1 for the 'Saving Config', 'Uploading' and 'Tiling' phases over the GPU and memory utilisation metrics. The dataset used to compute the table was taken from **gpu_task**. This dataset is a join of **gpu** with **app_task**, where each gpu observation is matched by the VM hostname and timestamp for each phase. Despite the reasonably high resolution of the GPU logging operation (each GPU logged performance metrics approximately every 2 seconds), on average these task phases occur over very short intervals (around 1 second or less). As such, these phases were statistically less likely to occur during coincident GPU logging, and consequently have a much smaller sample size relative to the rendering phase. 
 
-Table 2 provides quantified insight into this effect by detailing the mean runtime durations for each event. The phases in question display very short average durations. This effect is particularily exemplified in the case of Saving Config. With an average interval of 2ms, it is matched in only 108 of the GPU observations.
+Table 2 provides quantified insight into this effect by detailing the mean runtime durations for each event. The phases in question display very short average durations. This effect is particularly exemplified in the case of Saving Config. With an average interval of 2ms, it is matched in only 108 of the GPU observations.
 
-The presence of power and temperature data for the under-represented phases in the absence of corresponding GPU and memory data remains questionable. The power metric can assumed to be exhibiting baseline consumption. It is likely the temperature metric follows a heat loading dynamic, taking time to cool off after each rendering phase. The negative corrollary of this effect was already observed (ref. Figure 1). With regard to GPU and memory, the phases in question can be assumed to put only relatively low strain on the hardware resources. Therefore it is not surprising to see zero utilisation on these metrics, as any small percent utilisation caught by the sampling process would be effectively zeroed out by the mean operation. 
+The presence of power and temperature data for the under-represented phases in the absence of corresponding GPU and memory data remains questionable. The power metric can assumed to be exhibiting baseline consumption. It is likely the temperature metric follows a heat loading dynamic, taking time to cool off after each rendering phase. The negative corollary of this effect was already observed (ref. Figure 1). With regard to GPU and memory, the phases in question can be assumed to put only relatively low strain on the hardware resources. Therefore it is not surprising to see zero utilisation on these metrics, as any small percent utilisation caught by the sampling process would be effectively zeroed out by the mean operation. 
 
 ```{r eda_t02, echo=FALSE, cache=TRUE}
 # Q1 Which tasks dominate runtimes?
@@ -205,7 +187,7 @@ knitr::kable(task_runtime_means, booktabs = TRUE, caption = 'Mean Execution Time
 
 ### 4.3.2 Distribution
 
-The summary statisics for the GPU performance and log metrics provide a succinct method for comparing the various phases in terms of impact on system resources. However, they provide only limited insight on actual system performance. A more robust method of benchmarking high performance computational systems is to analyse quantiles including the median[1]. 
+The summary statistics for the GPU performance and log metrics provide a succinct method for comparing the various phases in terms of impact on system resources. However, they provide only limited insight on actual system performance. A more robust method of benchmarking high performance computational systems is to analyse quantiles including the median[1]. 
 
 Figure 4 displays the distributions of execution time for each pixel generation. The top plot presents the execution time for rendering and the bottom for the tiling phase. Both distributions appear bimodal, with the larger mode appearing mostly normal with a skew to the right. The smaller mode appears to represents a group of GPUs which exhibit significantly higher performance. However, the computational requirements of each pixel rendering are not uniform. Therefore it is impossible to confirm this from these visualisations (cf. Section 4.4)
 
@@ -243,16 +225,16 @@ Comparing the variation in GPU execution time and log metrics is problematic in 
 
 A visualisation of the comparative difference in rendering each pixel is presented in Figure 8. The six images are heatmaps displaying the relative impact of rendering each pixel in terms of a particular GPU metric, with lighter colours indicating higher values. The colour mapping is only relative inside each visualisation, i.e. there is no inherent relationship between the colour intensities of the various heatmaps. 
 
-The top row of Figure 8 contains visualisations for the GPU log metrics. When compared with the terascope map (ref. Figure 1), the cartolographic structure of each heatmap is clearly apparent. As can be seen, there are obvious areas common to all three plots in which the associated pixel rendering was less impactful on the metric. For instance, the top left corner of each heatmap contains a rectangular region with darker colour. This region corresponds to the legend (ref. Figure 1) which was actually included in the rendering process. As the legend is a mostly uniform colour graphic, the rendering process for pixels in this area was significantly less intense. 
+The top row of Figure 8 contains visualisations for the GPU log metrics. When compared with the terascope map (ref. Figure 1), the cartographic structure of each heatmap is clearly apparent. As can be seen, there are obvious areas common to all three plots in which the associated pixel rendering was less impactful on the metric. For instance, the top left corner of each heatmap contains a rectangular region with darker colour. This region corresponds to the legend (ref. Figure 1) which was actually included in the rendering process. As the legend is a mostly uniform colour graphic, the rendering process for pixels in this area was significantly less intense. 
 
-Additionally the construction site to the south west of St. James Park is clearly articulated as a low-intensity region. This was possibly due to a lack of activity at the time the terascope input data was aquired. The area has since become a major construction site with many new buildings. In general, streets required higher proccessing inputs, making them stand out and articulating the buildings and structures they delineate. This is likely caused by the shadows cast on streets by surrounding buildings. Shadows cause gradient ligting effects, resulting in more information to process than for regions of comparatively uniform light and colour. 
+Additionally the construction site to the south west of St. James Park is clearly articulated as a low-intensity region. This was possibly due to a lack of activity at the time the terascope input data was acquired. The area has since become a major construction site with many new buildings. In general, streets required higher processing inputs, making them stand out and articulating the buildings and structures they delineate. This is likely caused by the shadows cast on streets by surrounding buildings. Shadows cause gradient lighting effects, resulting in more information to process than for regions of comparatively uniform light and colour. 
 
 ```{r eda_f08, fig.cap = "Distribution by GPU \\& Memory: Render", fig.pos = "H", out.width='100%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
 # knitr::include_graphics(path = "../graphs/p24.pdf")
 grid.arrange(i30, i33, i34, i29, i31, i32, ncol = 3)
 ```
 
-In section 4.3.2 the bimodal distribution of the GPU execution times (render phase) raised questions as to the cause of the secondary mode. This smaller density is centred at approximately 24s, slightly more than half the median of the primary density (41.65s) and contains approximately 3.4 percent of total samples. The heatmap visualisation can be used to identify the cause of this anomoly.
+In section 4.3.2 the bimodal distribution of the GPU execution times (render phase) raised questions as to the cause of the secondary mode. This smaller density is centred at approximately 24s, slightly more than half the median of the primary density (41.65s) and contains approximately 3.4 percent of total samples. The heatmap visualisation can be used to identify the cause of this anomaly.
 
 The bottom row of Figure 8 contains various visualisations for execution time. The far left plot contains all 65,536 observations and displays a highly defined representation of the pixel execution time variation. The middle plot is filtered to display only pixels rendered with an execution time greater than the 95th percentile of the distribution (approximately 50s). In alignment with the left hand plot, it appears the major source of execution time delay was light scatter around the St. James Park superstructure. This finding is unsurprising in that the superstructure is multi-faceted and made of highly reflective material.
 
@@ -262,7 +244,7 @@ The far right plot in Figure 8 is filtered to display only pixels with execution
 
 The variation in rendering by pixel can be elaborated by examining the relationship between the GPU log metrics and execution time. The mean of all log metrics are joined with the execution time for each task in the **task_master** dataset. This provides a generalised insight into how power consumption, temperature, GPU and memory utilisation affect execution time.
 
-The results of this analysis are displayed in Figure 9. As illustrated, there are pronounced postive correlations between each metric and execution time. These correlations are primarily linear. Power consumption is a function of system resource utilisation, and can be expected to roughly follow the GPU and memory curves as execution time slows with increase resource usage. Temperature is also a function of system resource utilisation, given stable environmental conditions and thus demonstrates similar characteristics to power consumption. Memory usage shows a stable upwards growth in execution time as the demands on system memory increase.
+The results of this analysis are displayed in Figure 9. As illustrated, there are pronounced positive correlations between each metric and execution time. These correlations are primarily linear. Power consumption is a function of system resource utilisation, and can be expected to roughly follow the GPU and memory curves as execution time slows with increase resource usage. Temperature is also a function of system resource utilisation, given stable environmental conditions and thus demonstrates similar characteristics to power consumption. Memory usage shows a stable upwards growth in execution time as the demands on system memory increase.
 
 The exception to the linearity displayed in Figure 9 is GPU utilisation which presents a concave exponential curve, which appears to exhibit plateau characteristics starting at approximately 80 percent utilisation. This is logical in that the GPU is designed for given operational and theoretical throughput, after which non-linear performance degradation would be expected. However, the most dense region of this plot is largely linear, falling between 60 through 80 percent utilisation.
 
@@ -277,10 +259,9 @@ knitr::include_graphics(path = "../graphs/p39.png")
 
 Previous analyses demonstrated the variability in execution time and GPU log metrics over the 65,536 level 12 pixel rendering tasks. As detailed, the computational difficulty in rendering each pixel is variable. Therefore, it is not possible to benchmark and compare performance directly between GPUs using the Terascope rendering data. It is possible however, to observe broad trends between the GPUs by serial number (S/N).
 
-Referrring to Figure 10 and Table 3, four distinct series of S/N can be observed from left to right across the plot. Interestingly, the three series on the right side of the plot (Series 2, 3 and 4) appear to form pronounced clusters above and below the median execution time, indicating a strong bimodal distribution of tasks. In a random task allocation process, it would be expected to observe a more single-moded distribution. This is perhaps a result of distributed computing by Azure between geographically diverse datacentres. For instance, in the UK alone Microsoft has 2 separate Azure POPs.
+Referring to Figure 10 and Table 3, four distinct series of S/N can be observed from left to right across the plot. Interestingly, the three series on the right side of the plot (Series 2, 3 and 4) appear to form pronounced clusters above and below the median execution time, indicating a strong bimodal distribution of tasks. In a random task allocation process, it would be expected to observe a more single-moded distribution. This is perhaps a result of distributed computing by Azure between geographically diverse datacentres. For instance, in the UK alone Microsoft has 2 separate Azure POPs.
 
 Series 1 does not exhibit the clustering to the same degree as Series 2 through 4. However, referring to Table 3, this series is clearly the least sampled and therefore is not necessarily indicative of the underlying task allocation distribution.
-
 
 ```{r eda_f10, fig.cap = "Mean Render Execution Time by GPU S/N", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
 # Plot render time by S/N
@@ -291,70 +272,47 @@ ggplot(comp_gpu) + geom_point(aes(gpuSerial, avg_dur)) + labs(x = 'GPU S/N', y =
 ```
 
 
-
-
-
-
 ```{r eda_t03, echo=FALSE, cache=FALSE}
 # Table showing GPU S/Ns by grouped by series number
 knitr::kable(sn_cluster_df, booktabs = TRUE, caption = 'GPU S/N Series')
-
 ```
-
-
-
-
-
-
-
-
-
-
 
 
 ## 5. Results Evaluation and Reccomendations
 
-The analysis returned numerous results relevant to the business objectives. These results are summarised and evaluated below. Summary conclusions and reccomendations are included where applicable. 
+The analysis returned numerous findings relevant to system performance and future system benchmarking. These results are summarised and evaluated below. Summary conclusions and recommendations are included where applicable. 
 
-### 5.1 Findings
-
-**GPU loggin should be higher granularity**\newline
-There are noteable missing data in Table 1 for the 'Saving Config', 'Uploading' and 'Tiling' phases over the GPU and memory utilisation metrics. The dataset used to compute the table was taken from **gpu_task**. This dataset is a join of **gpu** with **app_task**, where each gpu observation is matched by the VM hostname and timestamp for each phase. Despite the reasonably high resolution of the GPU logging operation (each GPU logged performance metrics approximately every 2 seconds), on average these task phases occur over very short intervals (around 1 second or less). As such, these phases were statistically less likely to occur during coincident GPU logging, and consequently have a much smaller sample size relative to the rendering phase. 
-
-Table 2 provides quantified insight into this effect by detailing the mean runtime durations for each event. The phases in question display very short average durations. This effect is particularily exemplified in the case of Saving Config. With an average interval of 2ms, it is matched in only 108 of the GPU observations.
-
-**GPU logging should allow smaller measures of GPU/Mem usage**\newline
-The presence of power and temperature data for the under-represented phases in the absence of corresponding GPU and memory data remains questionable. The power metric can assumed to be exhibiting baseline consumption. It is likely the temperature metric follows a heat loading dynamic, taking time to cool off after each rendering phase. The negative corrollary of this effect was already observed (ref. Figure 1). With regard to GPU and memory, the phases in question can be assumed to put only relatively low strain on the hardware resources. Therefore it is not surprising to see zero utilisation on these metrics, as any small percent utilisation caught by the sampling process would be effectively zeroed out by the mean operation. 
+**GPU Logging Frequency**\newline
+Section 4.3.1 detailed missing data in Table 1 for the 'Saving Config', 'Uploading' and 'Tiling' phases over the GPU and memory utilisation metrics. The cause of this was identified as the 2s GPU logging frequency being too high to capture data during the brief runtime intervals associated with these phases. This was problematic in that it prevented any useful analysis of the system performance during the respective phases. Increased logging frequency during the 'Saving Config', 'Uploading' and 'Tiling' phases would ameliorate the issue, providing greater ability to evaluate the system performance. 
 
 
+**GPU Logging Granuarity**\newline
+Section 4.3.1 also questioned the possibility of logging granularity limits. The 'Saving Config', 'Uploading' and 'Tiling' phases power had matching temperature data for the in the GPU logs, but these entries had no corresponding GPU and memory data. While it is likely any small percent utilisation by these minimally impactful phases caught by the sampling process is being effectively zeroed out by the mean operation, it is also possible that the log does not register utilization below a certain threshold. If this is the case, increasing the threshold would allow more insight into the processing of these phases.
 
-**Distributions of different metrics can allow differing tools**\newline 
-In contrast to the execution time analysis, the distributions for the GPU logged metrics appear to be more normally distributed. As these data are different are not computational performance measures, it is reasonable to assume they would more closely follow a normal distribution rather than log-normal. The QQ plots in Figure 6 confirm this finding. With the exception of GPU utilisation, the theoretical and sample quantiles for each distribution are closely aligned. Therefore it is safe to model system performance on these metrics based on a normal distribution.
+**Differing Distributions**\newline 
+Section 4.3.2 revealed the differing distributions between execution time, and the GPU log metrics. In contrast to the log-normal distribution of the execution time analysis, the distributions for the GPU logged metrics are more normally distributed with the exception of GPU utilization (ref. Figure 6 QQ Plots). With the exception of GPU. Therefore it is safe to model system performance on these metrics based on a normal distribution. Execution time should be modeled and characterised using non-parametric measures such as quantiles[1].
 
-**Benchmarking performance requires uniform input data - same pixels can be used across all GPUs**\newline 
-Comparing the variation in GPU execution time and log metrics is problematic in that the workload assigned to each GPU is not identical. Each pixel is unique, and therefore the computational cost of rendering each pixel is not uniform. Various complexities in the input including topological structure affect the processing time and resources required to render the pixel. 
+**Performance Comparison Difficulties**\newline 
+Section 4.4 characterised the variation in rendering by pixel across execution time and GPU log metrics. Comparing the variation in GPU execution time and log metrics is problematic in that the workload assigned to each GPU is not identical. Each pixel is unique, and therefore the computational cost of rendering each pixel is not uniform. Various complexities in the input including topological structure affect the processing time and resources required to render the pixel. A comparison of system performance would require a structured test dataset, where the input data was the same across devices under test (DUTs)
+
+**Limited Insight into Performance Upper Bounds**\newline 
+Section 4.5 illustrated the correlations between each metric and execution time. These correlations are primarily linear with some plateau characteristics. The resources plots contain very few observations toward the higher end of each metric. For instance, the GPU utilisation is only sparsely represented past 85 percent utilisation and memory utilisation is cut off shortly after 50 percent utilisation. A structured testing environment could provide further insight into the upper bounds performance of the system.
+
+**GPU Unit Performance Comparison**\newline 
+Section 4.6 analysed the execution time performance of the GPUs by series. Three of the four series appeared to form pronounced clusters above and below the median execution time, indicating a strong bimodal distribution of tasks. In a random task allocation process, it would be expected to observe a more single-moded distribution. This is perhaps a result of distributed computing by Azure between geographically diverse datacentres. Consultation with Microsoft could possibly illuminate the cause of these findings. However, without a structured test environment to ensure uniform task difficulty, any conclusions drawn would not be robust.
 
 
-**Benchmarking performance requires increased granularity to examine affects on execution time with pushed resources**\newline 
-As illustrated, there are pronounced postive correlations with between each metric and execution time. These correlations are primarily linear with plateau characteristics. The exception is GPU utilisation which displays a concave exponential curve. This is surprising in that a convex curve would be expected, with processing throughput slowing exponentially under increased workload. However, the plot contains very few observations past 85 percent utilisation, indicating that further demands on the processor could result in slowing execution times.
+## Conclusion
 
-**Examine task allocation by S/N**\newline 
-Interestingly, the three series on the right side of the plot (Series 2, 3 and 4) appear to form pronounced clusters above and below the median execution time, indicating a strong bimodal distribution of tasks. In a random task allocation process, it would be expected to observe a more single-moded distribution.
-
-## Conclusions
-
-The large quantity of missing demographic data (approximately 90%) limited meaningful analysis of subsets of the sample. For instance, though there were 289 observations in the dataset of paid learners, only 13 of these obervations had complete demographic variables. Therefore it was impossible to draw statistical inference about demographic factors contributing to paid upgrades. If there was someway of enticing users to enter demographic data more frequently, it could vastly increase the utitlity of the learning analytics for this course. 
+This analysis has demonstrated the intense computational requirements of rendering images to the terapixel level. The deployment of 1024 GPUs across the Azure cloud provided a flexible and economical approach to this computation. Findings from the analysis of this process will inform future deployments and provide a solid analytical basis from which to design a benchmarking methodology.
 
 
 
 ## References
 
-1.  http://www.policyconnect.org. uk/hec/sites/site_hec/files/ report/419/fieldreportdownload/ frombrickstoclicks- hecreportforweb.pdf
+1.  Torsten Hoefler and Roberto Belli. 2015. Scientific benchmarking of parallel computing systems: twelve ways to tell the masses when reporting performance results. In Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC '15). ACM, New York, NY, USA, Article 73, 12 pages. DOI: https://doi.org/10.1145/2807591.2807644
 
-2. Chuang, Isaac and Ho, Andrew, HarvardX and MITx: Four Years of Open Online Courses -- Fall 2012-Summer 2016 (December 23, 2016). Available at SSRN: https://ssrn.com/abstract=2889436 or http://dx.doi.org/10.2139/ssrn.2889436
-
-3. National Science Foundation, National Center for Science and Engineering Statistics, Scientists and Engineers Statistical Data System (SESTAT) and National Survey of College Graduates (NSCG) (1993, 2013), http://sestat.nsf.gov.
-
+2.  Nick Holliman. 2018. Automating Data Visualization. Presentation. Newcastle University, Newcastel upon Tyne, UK
 
 
 

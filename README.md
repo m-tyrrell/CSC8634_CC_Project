@@ -1,39 +1,26 @@
 # CSC8634_CC_Project
 
-The ipynb source file for the report is located in 'CSC8635_ML_Project/reports' folder. The run the analysis from this file, the notes for running the analysis from script (below) should be observed, omitting the individual .py script runs.
+The Rmarkdown report .rmd source file is located in 'CSC8634_CC_Project/reports' folder. The file makes heavy use of cached objects and saved plots in order to speed loading. To run the analysis again from the start, the .r scripts must be run as follows.
 
 To load project from scripts:
 
-1. Create and activate keras-friendly py env (py3.6 etc)
+1. Open the archived project template folder 
 
-2. Download data file from: https://www.kaggle.com/kmader/skin-cancer-mnist-ham10000. Unzip and put in 'CSC8635_ML_Project/data' folder
+2. Start R Studio
 
-3. Open 'load_transform.py' from 'CSC8635_ML_Project/munge'
+3. Set working directory to project template folder, ensure the ProjectTemplate package is installed and loaded from the library, then execute load.project()
 
-4. Set 'project_dir' to working to CSC8635_ML_Project directory path
+4. Download data files from: https://github.com/NewcastleDataScience/StudentProjects201819/blob/master/TeraScope/Summary.md and put in 'CSC8634_CC_Project/data'
 
-5. Set 'test_n' to arbitrary test number for new tests. To load models etc for existing test, enter '1822-05' or '1823-01' (1822-05 forms the basis of the report. 1823-01 is an interesting model for which validation metrics peformed significantly better than training metrics. Unfortunatley there wasn't enough time to examine this in the report)
+5. Open '01-A.R' from 'CSC8634_CC_Project/munge' and run the script
 
-6. Run 'load_transform.py'
+6. Open '02-A.R' from 'CSC8634_CC_Project/munge' and review the script and decide on necessary operations. For example, gpu_task can take hours to run depending on the machine. In this case, it may be better to just use the cached dataset.
 
-7. Run 'CNN.py' from 'CSC8635_ML_Project/src'
+7. Open 'EDA-01.R' from 'CSC8634_CC_Project/src' and run through the analysis operations as requiredf
 
-8. Run 'Test_Analysis.py' from 'CSC8635_ML_Project/src'
 
-9. Run 'ROC_Analysis.py'from 'CSC8635_ML_Project/src'
-
-NB(1): In addition to the saved hdf5 models in 'CSC8635_ML_Project/tests', there are multiple cached objects stored in 'CSC8635_ML_Project/cache'. These objects are as follows:
-
-* meta (dataframe of complete dataset including resized images as arrays and labels)
-* hist_df (dataframe of model training history)
-* results_df (dataframe of model test/validation accuracy and loss performance)
-* y_score (numpy array of model prediction for ROC)
-
-These objects have been cached because of heavy computation requirements and/or compatibility with machines incapable of running keras. The scripts can be run as is to view the saved models/analysis. For new models, the **cached objects must be refreshed**. This can be accomplished by uncommenting the respective sections of the scripts. 
-
-NB(2): Additional files of interest:
+NB: Additional files of interest:
 
 * log.tx (git commit log)
-* CSC8635_ML_Project/docs/references (contains reference literature for report)
-* CNN_Search.py (automated hyperparameter search using Talos)
-* CNN_TL.py (model built using transfer learning from ImageNet InceptionV3)
+* CSC8634_CC_Project/docs/references (contains reference literature for report)
+

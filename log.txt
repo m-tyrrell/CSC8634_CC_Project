@@ -1,0 +1,137 @@
+commit b5acaaedc19a287d084c364322ef5c480d6695cd
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Fri Jan 25 14:14:19 2019 +0000
+
+    completed main
+
+commit 4857594225839bc6255e1acaabf1e0e05e767b23
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Fri Jan 25 11:33:53 2019 +0000
+
+    added execution time by log metrics analysis
+
+commit d610936f1b5309c58abcbdee5f7d508eb2dc7ecf
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Fri Jan 25 10:04:20 2019 +0000
+
+    proofread and edited
+
+commit 1456b81500a12b337ab6d66a8991210792b4e93c
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Fri Jan 25 02:07:14 2019 +0000
+
+    finished to pixel complexity comparison, completed plot formatting and insertion for s/n analysis
+
+commit 2d12db9d65d76a521b1e0d49fddc779654f3e417
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Thu Jan 24 19:39:30 2019 +0000
+
+    into distributions, qqplots
+
+commit 435167815dd33baba24b077c3168988091c66d08
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Thu Jan 24 17:18:41 2019 +0000
+
+    more eda
+
+commit 8d9d227c99dcbc1ec0509ef3d2940953c0576529
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Thu Jan 24 12:54:11 2019 +0000
+
+    many more plot tweaks, finally fixed include_graphics dir issue
+
+commit d72febe56d0f65fbc56ec02999606de2087f867d
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Thu Jan 24 01:50:35 2019 +0000
+
+    more eda
+
+commit ee1e4ee799b713da74845cb800eab5b6472cb7b8
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Wed Jan 23 22:28:00 2019 +0000
+
+    started methodology, completed data understanding
+
+commit bd56cbe654885c0365fc98c9a0e6a756a4a2495b
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Wed Jan 16 23:14:52 2019 +0000
+
+    refinded histogram plot function to take multiple datasets, cleaned up
+
+commit cefe72796e496d056db34efcf9aceac9ac1c692b
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Wed Jan 16 22:15:51 2019 +0000
+
+    more plots
+
+commit 79ca02e3d4403d25bb1fce479c41ebf13422f864
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Wed Jan 16 18:36:27 2019 +0000
+
+    added histogram function with vlines for detailed analysis of runtimes
+
+commit d3dfa27d943f1f2b0b31c940b7d281016990e772
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Wed Jan 16 12:54:29 2019 +0000
+
+    tweaks, rmarkdown doc started
+
+commit 12fa84ee59e28183508f3cc759c16f5c7cccf1a6
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Wed Jan 16 11:08:36 2019 +0000
+
+    coded heatmap as multi-input function
+
+commit 3ae496cf70bb92f009fa33c2ebeca2eb049ed9b4
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Wed Jan 16 09:43:55 2019 +0000
+
+    tabulate with n in group_by, added tblFun
+
+commit 0c3ae8253ebcc1c018561852f74a3e441f783214
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Tue Jan 15 19:02:40 2019 +0000
+
+    finally figured out how to compute event resource usage...
+
+commit b8b541d2caf497fcfc54d6c3ddb05173fb2ef6ee
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Tue Jan 15 09:39:42 2019 +0000
+
+    general cleaning, fixed issue with wrong ordering of dependant cached file
+
+commit 026c2e6d8ab77bcca1032df51f3933ebde451a5b
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Mon Jan 14 21:43:01 2019 +0000
+
+    deeper look at render time outliers using heatmap
+
+commit d991caa075e27b3d927f5c37085c7fc43bbb2fb5
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Mon Jan 14 19:23:18 2019 +0000
+
+    q4 gpu by mean render time
+
+commit 1297af9c4092dd01e3ed5923669d74451c2a6397
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Mon Jan 14 16:34:14 2019 +0000
+
+    q3 heatmap
+
+commit 011e77f10b8a4d350754313a3c864a48283ab483
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Mon Jan 14 12:38:33 2019 +0000
+
+    Q1/q2
+
+commit e9613ab619577c5260375cece64add53a1de7cab
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Sun Jan 13 19:11:54 2019 +0000
+
+    EDA
+
+commit 4e91d6aca92d88f7fb06a00bb46754f0766fc022
+Author: m-tyrrell <mtyrrell@ymail.com>
+Date:   Sun Jan 13 14:02:03 2019 +0000
+
+    initial commit 2
