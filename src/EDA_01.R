@@ -80,12 +80,17 @@ ggsave(filename="graphs/p11.png", plot=p11)
 
 ##### QUESTIONS
 
-# Q1 Which tasks dominate runtimes?
+# Which tasks dominate runtimes?
 task_runtime_means = task_runtimes %>%
         # Aggregate by event taking mean of all observations for each event
         group_by('Event' = eventName) %>%
         summarise('Duration (s)' = round(mean(duration),2), n = n())
 
+# Table showing means of all gpu metrics for each task mean by event
+gpu_plot_agg = gpu_task %>%
+        filter(eventName != 'TotalRender') %>%
+        group_by('Event' = eventName) %>%
+        summarise('Power (W)' = round(mean(watt),2), 'Temperature (s)' = round(mean(temp),2), 'GPU Usage (%)' = round(mean(cpu),3), 'Memory Usage (%)' = round(mean(mem),3), n = n())
 
 
 
@@ -109,28 +114,28 @@ grid.arrange(p12, p13, ncol=1)
 
 
 # Power Consumption
-p14 = plot_hist(gpu_task,'watt','Render',lab = 'Power Consumption (W)', n=0.7,c=1,h=0.9)
+p14 = plot_hist(gpu_task,'watt','Render',title=NULL,lab = 'Power Consumption (W)', n=0.7,c=1,h=0.9)
 #minimal data
 plot_hist(gpu_task,'watt','Tiling',lab = 'Power Consumption (W)', n=0.2,c=0,e=1,h=0.9)
 plot_hist(gpu_task,'watt','Uploading',lab = 'Power Consumption (W)', n=0.2,c=1,h=0.9)
 plot_hist(gpu_task,'watt','Saving Config',lab = 'Power Consumption (W)', n=0.2,c=0,e=1,h=0.9)
 
 # Temperature
-p15 = plot_hist(gpu_task,'temp','Render',lab = 'Temperature (C)', n=0.2,c=0,e=1,h=0.9)
+p15 = plot_hist(gpu_task,'temp','Render',title=NULL,lab = 'Temperature (C)', n=0.2,c=0,e=1,h=0.9)
 #minimal data
 plot_hist(gpu_task,'temp','Tiling',lab = 'Temperature (C)', n=0.2,c=0,e=1)
 plot_hist(gpu_task,'temp','Uploading',lab = 'Temperature (C)', n=0.1,c=0,e=1)
 plot_hist(gpu_task,'temp','Saving Config',lab = 'Temperature (C)', n=0.1,c=1,e=0)
 
 # CPU
-p16 = plot_hist(gpu_task,'cpu','Render',lab = 'GPU Usage (%)', n=0.4,c=1,e=0,h=0.9)
+p16 = plot_hist(gpu_task,'cpu','Render',title=NULL,lab = 'GPU Usage (%)', n=0.4,c=1,e=0,h=0.9)
 #minimal data
 plot_hist(gpu_task,'cpu','Tiling',lab = 'GPU Usage (%)', n=0.005,c=0,e=1)
 plot_hist(gpu_task,'cpu','Uploading',lab = 'GPU Usage (%)', n=0.1,c=0,e=1)
 plot_hist(gpu_task,'cpu','Saving Config',lab = 'GPU Usage (%)', n=0.1,c=0,e=1)
 
 # Memory
-p17 = plot_hist(gpu_task,'mem','Render',lab = 'Memory Usage (%)', n=0.3,c=1,e=0,h=0.9)
+p17 = plot_hist(gpu_task,'mem','Render',title=NULL,lab = 'Memory Usage (%)', n=0.3,c=1,e=0,h=0.9)
 #minimal data
 plot_hist(gpu_task,'mem','Tiling',lab = 'Memory Usage (%)', n=0.005,c=0,e=1)
 plot_hist(gpu_task,'mem','Uploading',lab = 'Memory Usage (%)', n=0.1,c=0,e=1)
@@ -153,6 +158,9 @@ grid.arrange(p16, p17, ncol=1)
 # Get execution time vector
 qq = task_runtimes %>%
         filter(eventName == 'Render')
+
+test = filter(qq, duration <= 25)
+
 # plot
 p18 = ggplot(qq, aes(sample = duration)) + stat_qq() + stat_qq_line(color='#0066CC')
 
@@ -168,87 +176,28 @@ cache('p19')
 cache('p20')
 cache('p21')
 cache('p22')
-grid.arrange(p19, p20, p21, p22, ncol=2)
-
-
-
-##### Compare resource usage by tile (heatmaps)
-# Setup image device, plot heatmap using heat_vis function, output image to graphs folder
-# Render and Tiling only (no contrast on other events)
-png('graphs/p24.png')
-heat_vis('Render','duration',caption='on')
-dev.off ();
-
-png('graphs/p25.png')
-heat_vis('Tiling','duration',caption='on')
-dev.off ();
-
-png('graphs/p26.png')
-heat_vis('Render','watt',caption='on')
-dev.off ();
-
-png('graphs/p27.png')
-heat_vis('Tiling','watt',caption='on')
-dev.off ();
-
-png('graphs/p28.png')
-heat_vis('Render','temp',caption='on')
-dev.off ();
-
-png('graphs/p29.png')
-heat_vis('Tiling','temp',caption='on')
-dev.off ();
-
-png('graphs/p30.png')
-heat_vis('Render','cpu',caption='on')
-dev.off ();
-
-png('graphs/p31.png')
-heat_vis('Tiling','cpu',caption='on')
-dev.off ();
-
-png('graphs/p32.png')
-heat_vis('Render','mem',caption='on')
-dev.off ();
-
-png('graphs/p33.png')
-heat_vis('Tiling','watt',caption='on')
-dev.off ();
-
-# Load interesting plot images and cache
-i1 <-  rasterGrob(as.raster(readPNG("graphs/p24.png")), interpolate = FALSE)
-cache('i1')
-i2 <-  rasterGrob(as.raster(readPNG("graphs/p25.png")), interpolate = FALSE)
-cache('i2')
-i3 <-  rasterGrob(as.raster(readPNG("graphs/p26.png")), interpolate = FALSE)
-cache('i3')
-i5 <-  rasterGrob(as.raster(readPNG("graphs/p28.png")), interpolate = FALSE)
-cache('i5')
-i7 <-  rasterGrob(as.raster(readPNG("graphs/p30.png")), interpolate = FALSE)
-cache('i7')
-i9 <-  rasterGrob(as.raster(readPNG("graphs/p32.png")), interpolate = FALSE)
-cache('i9')
-
-# Plot images
-grid.arrange(i1, i2, i3, i9, i7, i5, ncol = 3)
+p23 = grid.arrange(p19, p20, p21, p22, ncol=2)
+ggsave('graphs/p23.png', p23, width = 6.3, height = 5.8)
 
 
 
 
-# Compare performance by GPU (Q3b)
+
+
+# Compare performance by GPU 
 #Strip down gpu dataset to only hostnames and gpu serial
-gpu_ser = gpu %>%
+gpu_serial = gpu %>%
         distinct(hostname, gpuSerial, .keep_all = FALSE) %>%
         arrange(gpuSerial)
 
-cache('gpu_ser')
+cache('gpu_serial')
 
 # Filter and aggregate joined app_check/taskxy to display only relevant variables/tasks
 comp_gpu = task_runtimes %>%
         # Remove non-render tasks 
         filter(eventName == 'Render') %>%
         # Join stripped down gpu dataset on hostname
-        left_join(gpu_ser, by = 'hostname') %>%
+        left_join(gpu_serial, by = 'hostname') %>%
         # Aggregate by mean render time
         group_by(gpuSerial) %>%
         summarise(avg_dur = mean(duration)) %>%
@@ -257,48 +206,125 @@ comp_gpu = task_runtimes %>%
 
 cache('comp_gpu')
 
-# Plot render time by S/N        
-ggplot(comp_gpu) + geom_point(aes(gpuSerial, avg_dur)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') + 
-        geom_hline(yintercept = mean(comp_gpu$avg_dur), color = 'red', linetype = 'dotdash') 
-        # annotate("text", x=310000, y=mean(comp_gpu$avg_dur), label= paste("Arth. Mean",round(mean(comp_gpu$avg_dur),2)), size=2.5, hjust=c)
-        
-# Plot render time by S/N index to more easily show spread
-ggplot(comp_gpu) + geom_point(aes(index, avg_dur)) + labs(x = 'GPU S/N index', y = 'Mean Render Time (s)') + 
-        geom_hline(yintercept = mean(comp_gpu$avg_dur), color = 'red')
 
+
+
+# Filter and aggregate joined app_check/taskxy to display only relevant variables/tasks
+comp_gpu = task_runtimes %>%
+        # Remove non-render tasks 
+        filter(eventName == 'Render', duration < 25) %>%
+        # Join stripped down gpu dataset on hostname
+        left_join(gpu_serial, by = 'hostname') %>%
+        # Aggregate by mean render time
+        group_by(gpuSerial) %>%
+        summarise(avg_dur = mean(duration)) %>%
+        # Add index column for plotting
+        mutate(index = 1:1024)
+
+cache('comp_gpu')
+
+min(comp_gpu$avg_dur)
+
+
+# Plot render time by S/N
+h = median(comp_gpu$avg_dur)
+p24 = ggplot(comp_gpu) + geom_point(aes(gpuSerial, duration)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') + 
+        geom_hline(yintercept = h, color = 'red', linetype = 'dotdash') +
+        annotate("text", x=comp_gpu$gpuSerial[1]+500000000, y=h, label= paste("Median",round(h,2)), size=2.5, vjust=1.5)
+cache('p24')
+
+
+
+
+
+# Plot render time by S/N
+h = median(comp_gpu$avg_dur)
+p24 = ggplot(comp_gpu) + geom_point(aes(gpuSerial, avg_dur)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') + 
+        geom_hline(yintercept = h, color = 'red', linetype = 'dotdash') +
+        annotate("text", x=comp_gpu$gpuSerial[1]+500000000, y=h, label= paste("Median",round(h,2)), size=2.5, vjust=1.5)
+cache('p24')
 # Seems to be a distinct clustering of mean rendering times into approximately 2 clusters around the mean (41.3s)
-summary(comp_gpu$avg_dur)
 
-
-
-
-
-
-
-
-# Table showing means of all gpu metrics for each task mean by event
-gpu_plot_agg = gpu_task %>%
-        filter(eventName != 'TotalRender') %>%
-        group_by('Event' = eventName) %>%
-        summarise('Power (W)' = round(mean(watt),2), 'Temperature (s)' = round(mean(temp),2), 'GPU Usage (%)' = round(mean(cpu),3), 'Memory Usage (%)' = round(mean(mem),3), n = n())
-
-
+# Filter GPU task to allow comarison of S/N by GPU log
 gpu_render = gpu_task %>%
         filter(eventName == 'Render') %>%
         group_by(gpuSerial, eventName) %>%
         summarise(watt = mean(watt), temp = mean(temp), cpu = mean(cpu), mem = mean(mem)) %>%
         arrange(gpuSerial)
 
+cache('gpu_render')
 # Render event: Performance plots by S/N
-ggplot(gpu_render) + geom_point(aes(gpuSerial, watt)) + labs(x = 'GPU S/N', y = 'Power Consumption (s)')
-ggplot(gpu_render) + geom_point(aes(gpuSerial, temp)) + labs(x = 'GPU S/N', y = 'Temperature (C)') 
-ggplot(gpu_render) + geom_point(aes(gpuSerial, cpu)) + labs(x = 'GPU S/N', y = 'CPU (%)')
-ggplot(gpu_render) + geom_point(aes(gpuSerial, mem)) + labs(x = 'GPU S/N', y = 'Memory (%)') 
+h = mean(gpu_render$watt)
+p25 = ggplot(gpu_render) + geom_point(aes(gpuSerial, watt)) + labs(x = 'GPU S/N', y = 'Power Consumption (s)') +
+        geom_hline(yintercept = h, color = 'red', linetype = 'dotdash') +
+        annotate("text", x=comp_gpu$gpuSerial[1]+1000000000, y=h, label= paste("Arithmetic Mean",round(h,2)), size=2.5, vjust=1.5)
+cache('p25')
+h = mean(gpu_render$temp)
+p26 = ggplot(gpu_render) + geom_point(aes(gpuSerial, temp)) + labs(x = 'GPU S/N', y = 'Temperature (C)') +
+        geom_hline(yintercept = h, color = 'red', linetype = 'dotdash') +
+        annotate("text", x=comp_gpu$gpuSerial[1]+1000000000, y=h, label= paste("Arithmetic Mean",round(h,2)), size=2.5, vjust=1.5)
+cache('p26')
+h = median(gpu_render$cpu)
+p27 = ggplot(gpu_render) + geom_point(aes(gpuSerial, cpu)) + labs(x = 'GPU S/N', y = 'GPU Usage (%)') +
+        geom_hline(yintercept = h, color = 'red', linetype = 'dotdash') +
+        annotate("text", x=comp_gpu$gpuSerial[1]+1000000000, y=h, label= paste("Median",round(h,2)), size=2.5, vjust=1.5)
+cache('p27')
+h = mean(gpu_render$mem)
+p28 = ggplot(gpu_render) + geom_point(aes(gpuSerial, mem)) + labs(x = 'GPU S/N', y = 'Mem Usage (%)') +
+        geom_hline(yintercept = h, color = 'red', linetype = 'dotdash') +
+        annotate("text", x=comp_gpu$gpuSerial[1]+1000000000, y=h, label= paste("Arithmetic Mean",round(h,2)), size=2.5, vjust=1.5)
+cache('p28')
+
+grid.arrange(p25, p26, p27, p28, ncol=2)
 
 
 
 
         
+##### Compare resource usage by tile (heatmaps)
+# Setup image device, plot heatmap using heat_vis function, output image to graphs folder
+# Render and Tiling only (no contrast on other events)
+png('graphs/p29.png')
+heat_vis('Render','duration',caption='on')
+dev.off ();
+
+png('graphs/p30.png')
+heat_vis('Render','watt',caption='on')
+dev.off ();
+
+png('graphs/p31.png')
+heat_vis('Render','outlier',outlier_qty=50,out_sign='>',caption='on')
+dev.off ();
+
+png('graphs/p32.png')
+heat_vis('Render','outlier',outlier_qty=25,out_sign='<',caption='on')
+dev.off ();
+
+png('graphs/p33.png')
+heat_vis('Render','cpu',caption='on')
+dev.off ();
+
+png('graphs/p34.png')
+heat_vis('Render','mem',caption='on')
+dev.off ();
+
+
+# Load interesting plot images and cache
+i29 <-  rasterGrob(as.raster(readPNG("graphs/p29.png")), interpolate = FALSE)
+cache('i29')
+i30 <-  rasterGrob(as.raster(readPNG("graphs/p30.png")), interpolate = FALSE)
+cache('i30')
+i31 <-  rasterGrob(as.raster(readPNG("graphs/p31.png")), interpolate = FALSE)
+cache('i31')
+i32 <-  rasterGrob(as.raster(readPNG("graphs/p32.png")), interpolate = FALSE)
+cache('i32')
+i33 <-  rasterGrob(as.raster(readPNG("graphs/p33.png")), interpolate = FALSE)
+cache('i33')
+i34 <-  rasterGrob(as.raster(readPNG("graphs/p34.png")), interpolate = FALSE)
+cache('i34')
+
+# Plot images
+grid.arrange(i30, i33, i34, i29, i31, i32, ncol = 3)
 
      
 

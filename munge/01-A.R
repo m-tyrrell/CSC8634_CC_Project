@@ -58,10 +58,13 @@ cache("build_map")
 # Heatmap allowing comparison of resource usage by tile (ALL METRICS)
 
 # Filter and aggregate joined app_check/taskxy to display only relevant variables/tasks
-heat_vis = function(event, metric, outlier_var = 'duration', outlier_qty = 1, caption='on'){
+heat_vis = function(event, metric, outlier_var = 'duration', out_sign='<',outlier_qty = 1, caption='on'){
         cap_label = paste(event,'',toTitleCase(metric),' by Tile')
         if(caption == 'off'){
                 cap_label = ""
+        }
+        if(metric == 'outlier'){
+                cap_label = paste(event,'',toTitleCase(outlier_var),' by Tile - Filtered (',outlier_var,out_sign,outlier_qty,')')
         }
         comp_tile = app_task %>%
                 # Filter by selected event type and remove non-level 12 observations (because there are basically none compared to level 12)
@@ -75,7 +78,7 @@ heat_vis = function(event, metric, outlier_var = 'duration', outlier_qty = 1, ca
                 left_join(gpu_task)
         
         # Specify conditional filter for heatmap (can't use dplyr pipe because of fun argument input issues (lazyeval possible solution))
-        comp_tile$outlier = ifelse(comp_tile[[outlier_var]] > outlier_qty,1,1000)
+        comp_tile$outlier = ifelse(comp_tile[[outlier_var]] < outlier_qty,1,1000)
         
         # Split duration vector into 256 row vectors
         x = split(comp_tile[[metric]], ceiling(seq_along(comp_tile[[metric]])/256))
