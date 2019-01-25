@@ -73,12 +73,12 @@ p9 = ggplot(q2_samp, aes(powerDrawWatt, gpuMemUtilPerc)) + geom_point(size=0.25)
 p10 = ggplot(q2_samp, aes(gpuTempC, gpuMemUtilPerc)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Temperature (C)', y = 'Memory Usage (%)')
 
 # Plot grid of 6
-grid.arrange(p5, p6, p7, p8, p9, p10, ncol=3)
-ggsave(filename="graphs/p11.png", plot=p11)
+p11 = grid.arrange(p5, p6, p7, p8, p9, p10, ncol=3)
+ggsave('graphs/p11.png', p11, width = 6.3, height = 3.87)
 
 
 
-##### QUESTIONS
+
 
 # Which tasks dominate runtimes?
 task_runtime_means = task_runtimes %>%
@@ -206,37 +206,6 @@ comp_gpu = task_runtimes %>%
 
 cache('comp_gpu')
 
-
-
-
-# Filter and aggregate joined app_check/taskxy to display only relevant variables/tasks
-comp_gpu = task_runtimes %>%
-        # Remove non-render tasks 
-        filter(eventName == 'Render', duration < 25) %>%
-        # Join stripped down gpu dataset on hostname
-        left_join(gpu_serial, by = 'hostname') %>%
-        # Aggregate by mean render time
-        group_by(gpuSerial) %>%
-        summarise(avg_dur = mean(duration)) %>%
-        # Add index column for plotting
-        mutate(index = 1:1024)
-
-cache('comp_gpu')
-
-min(comp_gpu$avg_dur)
-
-
-# Plot render time by S/N
-h = median(comp_gpu$avg_dur)
-p24 = ggplot(comp_gpu) + geom_point(aes(gpuSerial, duration)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') + 
-        geom_hline(yintercept = h, color = 'red', linetype = 'dotdash') +
-        annotate("text", x=comp_gpu$gpuSerial[1]+500000000, y=h, label= paste("Median",round(h,2)), size=2.5, vjust=1.5)
-cache('p24')
-
-
-
-
-
 # Plot render time by S/N
 h = median(comp_gpu$avg_dur)
 p24 = ggplot(comp_gpu) + geom_point(aes(gpuSerial, avg_dur)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') + 
@@ -327,6 +296,33 @@ cache('i34')
 grid.arrange(i30, i33, i34, i29, i31, i32, ncol = 3)
 
      
+
+
+
+##### Interplay between execution time and GPU log metrics
+# Filter task_runtimes and joined task_gpu
+task_master = task_runtimes %>%
+        select(-hostname) %>%
+        # Join stripped down gpu dataset on hostname
+        left_join(gpu_task, by = c("taskId" = "taskId", "eventName" = "eventName"))
+# remove other phases leaving render
+task_render = filter(task_master, eventName == 'Render')
+cache('task_render')
+
+#Plot invidual correlations
+p35 = ggplot(task_render, aes(watt, duration)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Power (W)', y = 'Execution Time (s)')
+p36 = ggplot(task_render, aes(temp, duration)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Temperature (C)', y = 'Execution Time (s)')
+p37 = ggplot(task_render, aes(cpu, duration)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'GPU Usage (%)', y = 'Execution Time (s)')
+p38 = ggplot(task_render, aes(mem, duration)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Memory Usage (%)', y = 'Execution Time (s)')
+cache('p35')
+cache('p36')
+cache('p37')
+cache('p38')
+# Plot images
+p39 = grid.arrange(p35, p36, p37, p38, ncol = 2)
+ggsave('graphs/p39.png', p39, width = 6.3, height = 5.8)
+
+
 
 
 

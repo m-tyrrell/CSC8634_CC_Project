@@ -129,9 +129,9 @@ As detailed in section 2.2, the data show 1024 unique VMs, each with an attached
 
 ## 4.1 GPU Single Unit Examination
 
-In order to understand the dataset better, a single GPU was selected at random from the **gpu** dataset (S/N: 323617042631). The logged data for this GPU over the first 10 minutes of processing are displayed in Figure 1. The cycles for each pixel render can be clearly seen in the plot for each metric. Each pixel render appears to take approximately 40 seconds. GPU utlisation percentage appears relatively uniform for each pixel render at approximately 90%, whereas there is more variation on the other metrics. This is possibly a result of a percentage usage software limit on the GPU. Unsurprisingly, the temperature builds up from a cold start over successive pixel renders. 
+In order to understand the dataset better, a single GPU was selected at random from the **gpu** dataset (S/N: 323617042631). The logged data for this GPU over the first 10 minutes of processing are displayed in Figure 2. The cycles for each pixel render can be clearly seen in the plot for each metric. Each pixel render appears to take approximately 40 seconds. GPU utlisation percentage appears relatively uniform for each pixel render at approximately 90%, whereas there is more variation on the other metrics. This is possibly a result of a percentage usage software limit on the GPU. Unsurprisingly, the temperature builds up from a cold start over successive pixel renders. 
 
-```{r eda_f01, fig.cap = "Sample GPU Log Metrics over Time", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
+```{r eda_f02, fig.cap = "Sample GPU Log Metrics over Time", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
 # Create index column with accessible numbers for each gpu serial number
 gpu_id = data.frame(gpuSerial = sort(unique(gpu$gpuSerial)), id =  1:1024)
 # Create a copy of gpu dataset and insert gpu index vector
@@ -155,28 +155,14 @@ grid.arrange(p1, p2, p3, p4, ncol=2)
 
 ## 4.2 GPU Performance and Log Metrics Correlation
 
-Figure 2 displays scatter plots of the GPU log metrics correlations. As the GPU dataset is extremely large at 1.5 million observations, a random sample of 10,000 was selected for the plots. As demonstrated, there is a postive correlation between all of the metrics. However, there is also significant variation. This finding matches the observations taken from Figure 1. The positive correlation is to be expected, as the increased workload on the GPU in the form of GPU utilisation percentage will naturally require associated memory for the tiling job, and the demands of this utilisation on the hardware components will result in increased power consumption and rising temperature. 
+Figure 3 displays scatter plots of the GPU log metrics correlations. As the GPU dataset is extremely large at 1.5 million observations, a random sample of 10,000 was selected for the plots. As demonstrated, there is a postive correlation between all of the metrics. However, there is also significant variation. This finding matches the observations taken from Figure 2. The positive correlation is to be expected, as the increased workload on the GPU in the form of GPU utilisation percentage will naturally require associated memory for the tiling job, and the demands of this utilisation on the hardware components will result in increased power consumption and rising temperature. 
 
-```{r eda_f02, fig.cap = "GPU Log Metrics Correlation", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
-# Q2 interplay between GPU Performance metrics
-q2 = gpu %>%
-        select(4:7)
-
-# Take sample of q2 index
-x = sample(1:dim(q2)[1],10000)
-# Slice q2 by sample
-q2_samp = q2[x,]
-
-p5 = ggplot(q2_samp, aes(powerDrawWatt, gpuTempC)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Power (W)', y = 'Temperature (C)')
-p6 = ggplot(q2_samp, aes(gpuUtilPerc, gpuTempC)) + geom_point(size=0.25) + stat_smooth()+ labs( x = 'GPU Usage (%)', y = 'Temperature (C)')
-p7 = ggplot(q2_samp, aes(gpuUtilPerc, powerDrawWatt)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'GPU Usage (%)', y = 'Power (W)')
-p8 = ggplot(q2_samp, aes(gpuUtilPerc, gpuMemUtilPerc)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'GPU Usage (%)', y = 'Memory Usage (%)')
-p9 = ggplot(q2_samp, aes(powerDrawWatt, gpuMemUtilPerc)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Power (W)', y = 'Memory Usage (%)')
-p10 = ggplot(q2_samp, aes(gpuTempC, gpuMemUtilPerc)) + geom_point(size=0.25) + stat_smooth() + labs( x = 'Temperature (C)', y = 'Memory Usage (%)')
-
-# Plot grid of 6
-grid.arrange(p5, p6, p7, p8, p9, p10, ncol=3)
+```{r eda_f03, fig.cap = "GPU Log Metrics Correlation", fig.pos = "H", out.width='80%', fig.asp=0.2, fig.align='center', echo=FALSE, cache=FALSE}
+# Import plot saved as image (to save pdf rendering time)
+knitr::include_graphics(path = "../graphs/p11.png")
 ```
+
+
 
 ## 4.3 GPU Performance and Log Metrics Analysis
 
@@ -216,31 +202,28 @@ knitr::kable(task_runtime_means, booktabs = TRUE, caption = 'Mean Execution Time
 
 The summary statisics for the GPU performance and log metrics provide a succinct method for comparing the various phases in terms of impact on system resources. However, they provide only limited insight on actual system performance. A more robust method of benchmarking high performance computational systems is to analyse quantiles including the median[1]. 
 
-Figure 3 displays the distributions of execution time for each pixel generation. The top plot presents the execution time for rendering and the bottom for the tiling phase. Both distributions appear bimodal, with the larger mode appearing mostly normal with a skew to the right. The smaller mode appears to represents a group of GPUs which exhibit significantly higher performance. However, the computational requirements of each pixel rendering are not uniform. Therefore it is impossible to confirm this from these visualisations (cf. Section 4.4)
+Figure 4 displays the distributions of execution time for each pixel generation. The top plot presents the execution time for rendering and the bottom for the tiling phase. Both distributions appear bimodal, with the larger mode appearing mostly normal with a skew to the right. The smaller mode appears to represents a group of GPUs which exhibit significantly higher performance. However, the computational requirements of each pixel rendering are not uniform. Therefore it is impossible to confirm this from these visualisations (cf. Section 4.4)
 
 The features of the render distribution highlight the importance of documenting system performance beyond summary statistics. The long tail to the right is typical of computational systems, where the accumulated effects of networking, scheduling and processing error push the upper bound towards a log-normal distribution[1]. Were a normal distribution assumed in this case, the standard deviation for the render execution time distribution would be calculated as 6.047s. The maximum execution time at 81.51s would then be a highly improbable 6.7 sigma event.
 
-```{r eda_f03, fig.cap = "Distribution by Execution Time: Render \\& Tiling (Level 12)", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
+```{r eda_f04, fig.cap = "Distribution by Execution Time: Render \\& Tiling (Level 12)", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', , cache=TRUE}
 ##### Execution Time Plot - histograms showing distribution of execution times for each event type (Render & Tiling)
 grid.arrange(p12, p13, ncol=1)
 ```
 
-The bimodal characteristics of the distributions in Figure 3 are more pronounced for the rendering phase distribution; a finding which is logical given the doubled sample size for the rendering phase, as well as the vastly larger quantity of GPU logging data available over the 40+ second phase duration. Additionally as the time scale for the rendering phase is relatively large compared to tiling, it is easier to inherently comprehend the effects of variance on the operation through visualisation. As the comparative performance and relationship between the render phase and the other three phases has already been established in previous sections, the render phase will be used to evaluate system performance exlcusively from this point.
+The bimodal characteristics of the distributions in Figure 4 are more pronounced for the rendering phase distribution; a finding which is logical given the doubled sample size for the rendering phase, as well as the vastly larger quantity of GPU logging data available over the 40+ second phase duration. Additionally as the time scale for the rendering phase is relatively large compared to tiling, it is easier to inherently comprehend the effects of variance on the operation through visualisation. As the comparative performance and relationship between the render phase and the other three phases has already been established in previous sections, the render phase will be used to evaluate system performance exlcusively from this point.
 
-Figures 4 and 5 display the distributions of power consumption, temperature, GPU and memory utilisation for the render phase. The distribution pairs in each figure appear to be similar. This finding matches the observations in Figure 1, where a high degree of correlation was shown between these respective pairs.  
+Figures 5 and 6 display the distributions of power consumption, temperature, GPU and memory utilisation for the render phase. The distribution pairs in each figure appear to be similar. This finding matches the observations in Figure 2, where a high degree of correlation was shown between these respective pairs.  
 
-```{r eda_f04, fig.cap = "Distribution by Power Consumption \\& Temperature: Render", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
+```{r eda_f05, fig.cap = "Distribution by Power Consumption \\& Temperature: Render", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
 grid.arrange(p14, p15, ncol=1)
 ```
 
-```{r eda_f05, fig.cap = "Distribution by GPU \\& Memory \\% Utilisation: Render", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
+```{r eda_f06, fig.cap = "Distribution by GPU \\& Memory \\% Utilisation: Render", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
 grid.arrange(p16, p17, ncol=1)
 ```
 
 In contrast to the execution time analysis, the distributions for the GPU logged metrics appear to be more normally distributed. As these data are different are not computational performance measures, it is reasonable to assume they would more closely follow a normal distribution rather than log-normal. The QQ plots in Figure 6 confirm this finding. With the exception of GPU utilisation, the theoretical and sample quantiles for each distribution are closely aligned. Therefore it is safe to model system performance on these metrics based on a normal distribution.
-
-
-
 
 ```{r,eda_f07, echo=FALSE, fig.cap = "QQ Plot for GPU Log Metrics", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', cache=TRUE}
 knitr::include_graphics(path = "../graphs/p23.png")
@@ -268,8 +251,15 @@ The bottom row of Figure 8 contains various visualisations for execution time. T
 
 The far right plot in Figure 8 is filtered to display only pixels with execution times less than 25s. This filter isolates the smaller of the densities in the bimodal distribution of execution times. As demonstrated, the smaller density is a result of the rendering of the terascope legend; already identified as computationally simple task.
 
- 
+## 4.6 Affect on Execution Time of GPU Enviornmental and Resource Factors
 
+The variation in rendering by pixel can be elaborated by examining the relationship between the GPU log metrics and execution time. 
+
+
+```{r eda_f09, fig.cap = "Execution Time by GPU Enviromental and Resource Metrics", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', cache=FALSE}
+# Plot GPU log metrics affect on execution time
+knitr::include_graphics(path = "../graphs/p39.png")
+```
 
 
 
@@ -277,15 +267,13 @@ The far right plot in Figure 8 is filtered to display only pixels with execution
 
 The distributions of the GPU render phase performance and log metrics raise questions as to why 
 
-```{r eda_f09, fig.cap = "Execution Time by GPU S/N", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
+```{r eda_f10, fig.cap = "Execution Time by GPU S/N", fig.pos = "H", out.width='80%', fig.asp=0.75, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE, results= 'hide', cache=TRUE}
 # Plot render time by S/N
 h = median(comp_gpu$avg_dur)
 ggplot(comp_gpu) + geom_point(aes(gpuSerial, avg_dur)) + labs(x = 'GPU S/N', y = 'Mean Render Time (s)') + 
         geom_hline(yintercept = h, color = 'red', linetype = 'dotdash') +
         annotate("text", x=comp_gpu$gpuSerial[1]+500000000, y=h, label= paste("Median",round(h,2)), size=2.5, vjust=1.5)
 ```
-
-
 
 
 
