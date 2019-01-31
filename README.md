@@ -10,7 +10,7 @@ To load project from scripts:
 
 3. Set working directory to project template folder, ensure the ProjectTemplate package is installed and loaded from the library, then execute load.project()
 
-4. Download data files from: https://github.com/NewcastleDataScience/StudentProjects201819/blob/master/TeraScope/Summary.md and put in 'CSC8634_CC_Project/data'
+4. Download data files from: https://github.com and put in 'CSC8634_CC_Project/data'
 
 5. Open '01-A.R' from 'CSC8634_CC_Project/munge' and run the script
 

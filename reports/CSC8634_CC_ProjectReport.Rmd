@@ -45,12 +45,12 @@ The rendering process produced numerous data documenting the various phases of t
 
 Following consultation with the system developers, the analysis focused on the following key areas of inquiry: 
 
-*Which event types dominate task runtimes?
-*What is the interplay between GPU temperature and performance?
-*What is the interplay between increased power draw and render time?
-*Can we quantify the variation in computation requirements for particular tiles?
-*Can we identify particular GPU cards (based on their serial numbers) whose performance differs to other cards? (i.e. perpetually slow cards).
-*What can we learn about the efficiency of the task scheduling process?
+* Which event types dominate task runtimes?
+* What is the interplay between GPU temperature and performance?
+* What is the interplay between increased power draw and render time?
+* Can we quantify the variation in computation requirements for particular tiles?
+* Can we identify particular GPU cards (based on their serial numbers) whose performance differs to other cards? (i.e. perpetually slow cards).
+* What can we learn about the efficiency of the task scheduling process?
 
 This inquiry characterises the system through various analyses, but primarily relies on execution time as the key performance metric. As per Hoefler, "execution time is often the best metric for accessing computer performance because it has an undebatable meaning"[1].
 
@@ -307,7 +307,7 @@ Section 4.6 analysed the execution time performance of the GPUs by series. Three
 This analysis has demonstrated the intense computational requirements of rendering images to the terapixel level. The deployment of 1024 GPUs across the Azure cloud provided a flexible and economical approach to this computation. Findings from the analysis of this process will inform future deployments and provide a solid analytical basis from which to design a benchmarking methodology.
 
 
-
+\newpage
 ## References
 
 1.  Torsten Hoefler and Roberto Belli. 2015. Scientific benchmarking of parallel computing systems: twelve ways to tell the masses when reporting performance results. In Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC '15). ACM, New York, NY, USA, Article 73, 12 pages. DOI: https://doi.org/10.1145/2807591.2807644
