@@ -1,4 +1,4 @@
-# CSC8634_CC_Project
+# Terascope Terapixel Deployment: Computational Analysis
 
 The Rmarkdown report .rmd source file is located in 'CSC8634_CC_Project/reports' folder. The file makes heavy use of cached objects and saved plots in order to speed loading. To run the analysis again from the start, the .r scripts must be run as follows.
 
