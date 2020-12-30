@@ -3,7 +3,7 @@
 # Terascope Terapixel Deployment: Computational Analysis
 > Mark Tyrrell
 
-<img src="https://media.blendernation.com/wp-content/uploads/2018/03/Screenshot_20180322-161400-1024x768.png" align="right" />
+
 
 <img src="https://github.com/m-tyrrell/Terapixel-Analysis/blob/master/graphs/cover.png?raw=true" align="right" />
 
@@ -36,4 +36,5 @@ NB: Additional files of interest:
 
 * log.tx (git commit log)
 * CSC8634_CC_Project/docs/references (contains reference literature for report)
+* NCL terrapixel: https://media.blendernation.com/wp-content/uploads/2018/03/Screenshot_20180322-161400-1024x768.png
 
